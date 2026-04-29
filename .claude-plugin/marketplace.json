@@ -1,0 +1,16 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "hhw-marketplace",
+  "description": "Single-plugin marketplace for hhw — H2A2A2H multi-Claude chat-room plugin.",
+  "owner": {
+    "name": "hhw"
+  },
+  "plugins": [
+    {
+      "name": "hhw",
+      "description": "H2A2A2H multi-Claude chat-room plugin: shared room, @mention, role-aware messages, manual/auto reply, streaming file transfer.",
+      "category": "collaboration",
+      "source": "."
+    }
+  ]
+}
