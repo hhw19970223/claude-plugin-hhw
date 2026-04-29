@@ -4,38 +4,48 @@
 
 需求/协议对照:见 [PRD.md](PRD.md) (v0.4) 与 [PROTOCOL.md](PROTOCOL.md) (v1)。
 
-## 快速开始
+## 快速安装
 
-### 1. 启动 relay(服务器端,任一机器即可)
+> 本仓库为 **私有**,先确保 `gh auth status` 已登录能访问 `hhw19970223/claude-plugin-hhw` 的账号。
 
-```bash
-cd relay-server
-npm install
-HHW_TOKEN=<你的共享 token> PORT=8080 node relay.js
-```
-
-生产建议用 `wss://`(Caddy / nginx 反向代理终结 TLS)。详细运维见 [relay-server/README.md](relay-server/README.md)。
-
-### 2. 安装插件到 Claude Code(每个客户端)
+### 1. 克隆仓库 + 装依赖(一行命令)
 
 ```bash
-# 开发模式:symlink 进插件目录
-mkdir -p ~/.claude/plugins
-ln -sfn /Users/fishan/Desktop/agent/claude-plugin ~/.claude/plugins/hhw
-npm install --prefix ~/.claude/plugins/hhw
+gh repo clone hhw19970223/claude-plugin-hhw ~/claude-plugin-hhw \
+  && (cd ~/claude-plugin-hhw && npm install)
 ```
 
-(或使用 Claude Code 原生 `/plugin install` 从 marketplace 安装,视 CLI 版本而定。)
+> 喜欢 SSH 的话:`git clone git@github.com:hhw19970223/claude-plugin-hhw.git ~/claude-plugin-hhw && (cd ~/claude-plugin-hhw && npm install)`
 
-### 3. 首次运行并填写配置
+### 2. 在 Claude Code 里挂载
 
-在 Claude Code 里:
+打开 Claude Code,依次输入:
+
+```
+/plugin marketplace add ~/claude-plugin-hhw
+/plugin install hhw
+```
+
+输入 `/` 查看命令补全,应该能看到 `/hhw:start` / `/hhw:say` / `/hhw:inbox` 等。
+
+### 3. 起一台 relay(所有成员共用一台)
+
+relay 的实现不在这个仓库里,请参考 [PROTOCOL.md](PROTOCOL.md) 自己部署,或本地调试用:
+
+```bash
+# 最小 relay(Node 18+,依赖 ws):
+#   - HHW_TOKEN 必须设置,是所有客户端的共享认证 token
+#   - 生产建议 wss:// + 反向代理
+HHW_TOKEN=<你定的强 token> PORT=8080 node path/to/relay.js
+```
+
+### 4. 首次 `/hhw:start`
 
 ```
 /hhw:start -n alice
 ```
 
-首次调用会把插件根的 `config.example.json` 复制到 `~/.claude/plugin-data/hhw/config.json`(chmod 0600),并要求你填写:
+**首次运行**会把 `config.example.json` 复制到 `~/.claude/plugin-data/hhw/config.json`(chmod 0600),并提示你填写:
 
 ```json
 {
@@ -48,7 +58,15 @@ npm install --prefix ~/.claude/plugins/hhw
 }
 ```
 
-填好后重新 `/hhw:start -n alice`。
+填好后再 `/hhw:start -n alice`。出现 `joined as alice (mode=manual), online: [alice]` 即接入成功。
+
+### 5. 升级
+
+```bash
+cd ~/claude-plugin-hhw && git pull && npm install
+```
+
+配置文件在 `~/.claude/plugin-data/hhw/` 下(独立于插件代码),`git pull` 不会覆盖你的 token/name。
 
 ## 命令总表
 
@@ -112,17 +130,17 @@ npm install --prefix ~/.claude/plugins/hhw
 ## 排障
 
 - **连不上 relay**:查看 `~/.claude/plugin-data/hhw/daemon.log`。常见 1008 = token 不对、4009 = name 被占、4012 = name 不合法。
-- **消息没注入到 Claude 上下文**:确认插件已 enable(插件目录正确 symlink 到 `~/.claude/plugins/`);查看 `~/.claude/plugin-data/hhw/pending_notifications.jsonl` 是否有新行。
+- **消息没注入到 Claude 上下文**:确认插件已 enable(在 Claude Code 里 `/plugin list` 看 `hhw` 是否启用);查看 `~/.claude/plugin-data/hhw/pending_notifications.jsonl` 是否有新行。
 - **auto 模式下 Claude 没自动回**:`Stop` hook 需要 Claude Code 支持 `decision:"block"` 语义;查看 `pending_auto_tasks.jsonl` 是否累积,若累积 > 5 min 会被降级到 inbox。
 - **文件传不过去**:查看 daemon.log,若是 `transfer_busy` 说明同房间有其他文件流在进行(v1 全局互斥);>100MB 会被拒绝(`HHW_MAX_FILE`)。
 
 ## 本地端到端联调
 
-单机 relay + 两个 Claude Code 实例(或 relay + 一个真人 + 一个 raw WS 脚本)。
+单机 relay(自行部署,协议见 [PROTOCOL.md](PROTOCOL.md))+ 两个 Claude Code 实例,或 relay + 一个真人 + 一个 raw WS 脚本。
 
 ```bash
-# 终端 A:relay
-cd relay-server && HHW_TOKEN=dev PORT=8080 node relay.js
+# 终端 A:本地 relay(自己的实现)
+HHW_TOKEN=dev PORT=8080 node your-relay.js
 
 # 终端 B:Claude Code session 1
 HHW_RELAY_URL=ws://localhost:8080/ws HHW_TOKEN=dev claude
@@ -140,7 +158,7 @@ HHW_RELAY_URL=ws://localhost:8080/ws HHW_TOKEN=dev claude
 ## 目录结构
 
 ```
-claude-plugin/
+claude-plugin-hhw/
 ├── .claude-plugin/plugin.json            # 清单
 ├── commands/*.md                         # 10 个 slash 命令
 ├── hooks/hooks.json                      # UserPromptSubmit + Stop
@@ -157,10 +175,11 @@ claude-plugin/
 │   └── hook-stop.js                      # Stop hook(auto 模式 block)
 ├── config.example.json                   # 占位符模板
 ├── package.json                          # 依赖 ws@^8
-├── relay-server/                         # 独立 Node relay 实现
 ├── PRD.md PROTOCOL.md                    # 规范
 └── README.md                             # 本文
 ```
+
+> relay 服务端实现不随插件分发;请按 [PROTOCOL.md](PROTOCOL.md) 自行实现或单独下载。
 
 ## 安全提示
 
