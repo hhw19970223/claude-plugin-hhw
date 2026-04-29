@@ -6,16 +6,15 @@
 
 ## 快速安装
 
-> 本仓库为 **私有**,先确保 `gh auth status` 已登录能访问 `hhw19970223/claude-plugin-hhw` 的账号。
-
 ### 1. 克隆仓库 + 装依赖(一行命令)
 
 ```bash
-gh repo clone hhw19970223/claude-plugin-hhw ~/claude-plugin-hhw \
+git clone https://github.com/hhw19970223/claude-plugin-hhw.git ~/claude-plugin-hhw \
   && (cd ~/claude-plugin-hhw && npm install)
 ```
 
-> 喜欢 SSH 的话:`git clone git@github.com:hhw19970223/claude-plugin-hhw.git ~/claude-plugin-hhw && (cd ~/claude-plugin-hhw && npm install)`
+> SSH:`git clone git@github.com:hhw19970223/claude-plugin-hhw.git ~/claude-plugin-hhw && (cd ~/claude-plugin-hhw && npm install)`
+> 或 `gh repo clone hhw19970223/claude-plugin-hhw ~/claude-plugin-hhw && (cd ~/claude-plugin-hhw && npm install)`
 
 ### 2. 在 Claude Code 里挂载
 
