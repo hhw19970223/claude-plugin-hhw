@@ -1,7 +1,9 @@
 import net from 'node:net';
 import fs from 'node:fs';
 
-// Line-delimited JSON IPC server over a unix domain socket.
+const IS_WIN = process.platform === 'win32';
+
+// Line-delimited JSON IPC server over a unix domain socket (*nix) or named pipe (Windows).
 // One request per connection: client writes one line, server writes one line, socket closes.
 export class IpcServer {
   constructor(socketPath, handler) {
@@ -11,16 +13,18 @@ export class IpcServer {
   }
 
   async start() {
-    // Clean stale socket file from a previous crash.
-    try { fs.unlinkSync(this.socketPath); } catch (e) {
-      if (e.code !== 'ENOENT') throw e;
+    // Clean stale socket file from a previous crash (*nix only — named pipes have no FS entry).
+    if (!IS_WIN) {
+      try { fs.unlinkSync(this.socketPath); } catch (e) {
+        if (e.code !== 'ENOENT') throw e;
+      }
     }
 
     return new Promise((resolve, reject) => {
       this.server = net.createServer((sock) => this._onConnection(sock));
       this.server.on('error', reject);
       this.server.listen(this.socketPath, () => {
-        try { fs.chmodSync(this.socketPath, 0o600); } catch {}
+        if (!IS_WIN) { try { fs.chmodSync(this.socketPath, 0o600); } catch {} }
         this.server.off('error', reject);
         resolve();
       });
@@ -31,7 +35,7 @@ export class IpcServer {
     return new Promise((resolve) => {
       if (!this.server) return resolve();
       this.server.close(() => {
-        try { fs.unlinkSync(this.socketPath); } catch {}
+        if (!IS_WIN) { try { fs.unlinkSync(this.socketPath); } catch {} }
         resolve();
       });
     });

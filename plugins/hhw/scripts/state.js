@@ -1,12 +1,22 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
+import crypto from 'node:crypto';
+
+export const IS_WIN = process.platform === 'win32';
 
 export const DATA_DIR       = path.join(os.homedir(), '.claude', 'plugin-data', 'hhw');
 export const CONFIG_PATH    = path.join(DATA_DIR, 'config.json');
 export const SESSION_PATH   = path.join(DATA_DIR, 'session.json');
 export const SESSION_ERROR  = path.join(DATA_DIR, 'session-error.json');
-export const SOCKET_PATH    = path.join(DATA_DIR, 'daemon.sock');
+// IPC endpoint:
+//  - *nix: unix domain socket at DATA_DIR/daemon.sock
+//  - Windows: named pipe at \\.\pipe\hhw-daemon-<8-hex-of-hashed-home>
+//    (cannot be an on-disk file; AF_UNIX on Windows hits EACCES on some
+//     NTFS layouts; named pipes are the portable choice.)
+export const SOCKET_PATH    = IS_WIN
+  ? `\\\\.\\pipe\\hhw-daemon-${crypto.createHash('sha1').update(os.homedir()).digest('hex').slice(0, 8)}`
+  : path.join(DATA_DIR, 'daemon.sock');
 export const DAEMON_LOG     = path.join(DATA_DIR, 'daemon.log');
 export const PENDING_NOTIFS = path.join(DATA_DIR, 'pending_notifications.jsonl');
 export const PENDING_AUTO   = path.join(DATA_DIR, 'pending_auto_tasks.jsonl');
