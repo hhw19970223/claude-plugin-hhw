@@ -8,10 +8,22 @@ import { userErr, userOut } from './log.js';
 const __filename = fileURLToPath(import.meta.url);
 const PLUGIN_ROOT = path.resolve(path.dirname(__filename), '..');
 
-function run(cmd, label) {
+function findGitRoot(start) {
+  let dir = start;
+  for (let i = 0; i < 10; i++) {
+    if (fs.existsSync(path.join(dir, '.git'))) return dir;
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return null;
+}
+const REPO_ROOT = findGitRoot(PLUGIN_ROOT);
+
+function run(cmd, label, cwd) {
   userOut(`\n==> ${label}`);
-  userOut(`    $ ${cmd}  (cwd=${PLUGIN_ROOT})`);
-  execSync(cmd, { cwd: PLUGIN_ROOT, stdio: 'inherit' });
+  userOut(`    $ ${cmd}  (cwd=${cwd})`);
+  execSync(cmd, { cwd, stdio: 'inherit' });
 }
 
 async function stopDaemonIfRunning() {
@@ -33,16 +45,16 @@ async function stopDaemonIfRunning() {
 }
 
 async function main() {
-  if (!fs.existsSync(path.join(PLUGIN_ROOT, '.git'))) {
-    userErr(`插件目录不是 git 仓库:${PLUGIN_ROOT}\n可能是通过 marketplace 安装的副本,请手动在源目录 git pull 后重装插件。`);
+  if (!REPO_ROOT) {
+    userErr(`未找到 .git 目录(从 ${PLUGIN_ROOT} 向上最多查 10 层)。\n可能是通过 marketplace 从 github 安装的只读副本,请在源仓库目录手动 git pull 后重装插件。`);
     process.exit(1);
   }
 
   const prev = await stopDaemonIfRunning();
 
   try {
-    run('git pull --ff-only', 'git pull');
-    run('npm install --no-audit --no-fund', 'npm install');
+    run('git pull --ff-only', 'git pull', REPO_ROOT);
+    run('npm install --no-audit --no-fund', 'npm install', PLUGIN_ROOT);
   } catch (e) {
     userErr(`更新失败: ${e.message}`);
     process.exit(1);

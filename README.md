@@ -81,6 +81,7 @@ cd ~/claude-plugin-hhw && git pull && npm install
 | `/hhw:append` | `<threadId> <text>` | 以本人 role=user 向已有 thread 追加一句 |
 | `/hhw:mode` | `[manual\|auto]` | 切换回应模式;不带参则查询当前 |
 | `/hhw:history` | `[--limit=N]` | 本地历史(默认 50 条) |
+| `/hhw:update` | — | 拉新版代码(git pull + npm install),自动关停 daemon |
 
 ## 回应模式
 
@@ -157,26 +158,30 @@ HHW_RELAY_URL=ws://localhost:8080/ws HHW_TOKEN=dev claude
 ## 目录结构
 
 ```
-claude-plugin-hhw/
-├── .claude-plugin/plugin.json            # 清单
-├── commands/*.md                         # 10 个 slash 命令
-├── hooks/hooks.json                      # UserPromptSubmit + Stop
-├── scripts/                              # node 实现
-│   ├── config.js state.js log.js         # 基础设施
-│   ├── ipc-client.js ipc-server.js       # IPC over unix socket
-│   ├── ws-client.js                      # relay WebSocket 封装 + 重连
-│   ├── daemon.js                         # 长驻主进程
-│   ├── start.js stop.js                  # 生命周期
-│   ├── say.js who.js mode.js history.js  # 核心命令
-│   ├── inbox.js accept.js reject.js      # inbox 流
-│   ├── append.js
-│   ├── hook-pre-prompt.js                # UserPromptSubmit hook
-│   └── hook-stop.js                      # Stop hook(auto 模式 block)
-├── config.example.json                   # 占位符模板
-├── package.json                          # 依赖 ws@^8
+claude-plugin-hhw/                        # git 仓库 / marketplace 根
+├── .claude-plugin/marketplace.json       # marketplace 清单(列出 hhw 插件)
+├── plugins/hhw/                          # hhw 插件根(CLAUDE_PLUGIN_ROOT)
+│   ├── .claude-plugin/plugin.json        # 插件清单
+│   ├── commands/*.md                     # 11 个 slash 命令
+│   ├── hooks/hooks.json                  # UserPromptSubmit + Stop
+│   ├── scripts/                          # node 实现
+│   │   ├── config.js state.js log.js         # 基础设施
+│   │   ├── ipc-client.js ipc-server.js       # IPC over unix socket
+│   │   ├── ws-client.js                      # relay WebSocket 封装 + 重连
+│   │   ├── daemon.js                         # 长驻主进程
+│   │   ├── start.js stop.js update.js        # 生命周期
+│   │   ├── say.js who.js mode.js history.js  # 核心命令
+│   │   ├── inbox.js accept.js reject.js      # inbox 流
+│   │   ├── append.js
+│   │   ├── hook-pre-prompt.js                # UserPromptSubmit hook
+│   │   └── hook-stop.js                      # Stop hook(auto 模式 block)
+│   ├── config.example.json               # 占位符模板
+│   └── package.json                      # 依赖 ws@^8
 ├── PRD.md PROTOCOL.md                    # 规范
 └── README.md                             # 本文
 ```
+
+> 仓库根同时是一个**单插件 marketplace**:`.claude-plugin/marketplace.json` 里 `source: "./plugins/hhw"` 告诉 Claude Code 插件本体在子目录。这种分层是官方 marketplace 的标准结构,不要把 plugin.json 直接放仓库根(Claude Code 不认)。
 
 > relay 服务端实现不随插件分发;请按 [PROTOCOL.md](PROTOCOL.md) 自行实现或单独下载。
 

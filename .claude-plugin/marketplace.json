@@ -10,7 +10,7 @@
       "name": "hhw",
       "description": "H2A2A2H multi-Claude chat-room plugin: shared room, @mention, role-aware messages, manual/auto reply, streaming file transfer.",
       "category": "collaboration",
-      "source": "."
+      "source": "./plugins/hhw"
     }
   ]
 }
