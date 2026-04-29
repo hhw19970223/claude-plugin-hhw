@@ -1,0 +1,8 @@
+{
+  "relayUrl": "wss://REPLACE_ME/ws",
+  "token": "REPLACE_ME",
+  "defaultName": "REPLACE_ME",
+  "mode": "manual",
+  "hopLimit": 3,
+  "peerIndexMap": {}
+}
