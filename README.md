@@ -44,7 +44,7 @@ NEXSCOPE_TOKEN=<your strong token> PORT=8080 node path/to/relay.js
 /nexscope:start -n alice
 ```
 
-**On first run** the plugin copies `config.example.json` to `~/.claude/plugin-data/nexscope/config.json` (chmod 0600) and asks you to fill in:
+**On first run** the plugin copies `config.example.json` to `./.claude/plugin-data/nexscope/config.json` (chmod 0600) and asks you to fill in:
 
 ```json
 {
@@ -59,13 +59,15 @@ NEXSCOPE_TOKEN=<your strong token> PORT=8080 node path/to/relay.js
 
 Save and rerun `/nexscope:start -n alice`. When you see `joined as alice (mode=manual), online: [alice]` you're in.
 
+> **Data is project-local.** `./.claude/plugin-data/nexscope/` lives under the directory where Claude Code was launched — each project gets its own session, inbox, history, and daemon socket. Switching projects gives you a clean slate. Add `.claude/plugin-data/` to your project's `.gitignore` so tokens/history don't get committed.
+
 ### 5. Upgrade
 
 ```bash
 cd ~/claude-plugin-hhw && git pull && npm install
 ```
 
-Your config lives in `~/.claude/plugin-data/nexscope/` (separate from the plugin code), so `git pull` never overwrites your token/name.
+Your config lives in `./.claude/plugin-data/nexscope/` (separate from the plugin code), so `git pull` never overwrites your token/name.
 
 ## Command Reference
 
@@ -105,13 +107,13 @@ Broadcast (no @) messages are **never** auto-replied to, regardless of mode.
         │                                    │ ◀── ws frames ─── other peers
         │                                    │
         │                                    ▼
-        │                      ~/.claude/plugin-data/nexscope/
+        │                      ./.claude/plugin-data/nexscope/
         │                        pending_notifications.jsonl ◀── UserPromptSubmit hook
         │                        pending_auto_tasks.jsonl    ◀── Stop hook (blocks when auto mode)
         │                        inbox.jsonl  history.jsonl  presence.json  files/
 ```
 
-- All state lives in `~/.claude/plugin-data/nexscope/` (decoupled from plugin code — upgrades and reinstalls don't touch your data).
+- All state lives in `./.claude/plugin-data/nexscope/` (decoupled from plugin code — upgrades and reinstalls don't touch your data).
 - The daemon is a **single long-running process per user**: holds the WebSocket and listens on a unix socket for IPC.
 - Before every user prompt, the hook injects events the daemon has recorded into Claude's context — closing the loop "message received → Claude sees it → Claude decides whether to reply."
 
@@ -129,8 +131,8 @@ Broadcast (no @) messages are **never** auto-replied to, regardless of mode.
 
 ## Troubleshooting
 
-- **Can't connect to relay**: check `~/.claude/plugin-data/nexscope/daemon.log`. Common codes: 1008 = bad token, 4009 = name taken, 4012 = invalid name.
-- **Messages not injected into Claude's context**: confirm the plugin is enabled (`/plugin list` shows `nexscope`); check whether `~/.claude/plugin-data/nexscope/pending_notifications.jsonl` has fresh rows.
+- **Can't connect to relay**: check `./.claude/plugin-data/nexscope/daemon.log`. Common codes: 1008 = bad token, 4009 = name taken, 4012 = invalid name.
+- **Messages not injected into Claude's context**: confirm the plugin is enabled (`/plugin list` shows `nexscope`); check whether `./.claude/plugin-data/nexscope/pending_notifications.jsonl` has fresh rows.
 - **Auto mode doesn't reply automatically**: the `Stop` hook needs Claude Code to honor `decision:"block"`. Inspect `pending_auto_tasks.jsonl`; tasks older than 5 minutes are downgraded to inbox.
 - **File transfer fails**: check daemon.log — `transfer_busy` means another file stream is in flight in the room (v1 global mutex); files larger than `NEXSCOPE_MAX_FILE` (100 MB) are rejected.
 

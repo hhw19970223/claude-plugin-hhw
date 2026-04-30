@@ -256,7 +256,7 @@ Client                                    Relay                          Peer(s)
 
 Recommended v1 client behavior on receipt:
 
-1. On `file-start` → open a write stream to `~/.claude/plugin-data/nexscope/files/<msgId>-<name>.part`.
+1. On `file-start` → open a write stream to `./.claude/plugin-data/nexscope/files/<msgId>-<name>.part`.
 2. Append each binary chunk.
 3. On `file-end` → rename `.part` to the final filename; if `sha256` is provided, verify.
 4. Print a notification line `[<roleLabel> <from> → <target>] (file) <name> saved to <path>` (see PRD FR-4).

@@ -5,17 +5,24 @@ import crypto from 'node:crypto';
 
 export const IS_WIN = process.platform === 'win32';
 
-export const DATA_DIR       = path.join(os.homedir(), '.claude', 'plugin-data', 'nexscope');
+// Data dir is project-local: .claude/plugin-data/nexscope under the current
+// working directory (which Claude Code sets to the project root when it
+// invokes slash commands, hooks, or spawns the daemon). This keeps every
+// project's session/inbox/history/files isolated — switching projects never
+// crosses state.
+export const PROJECT_ROOT   = process.cwd();
+export const DATA_DIR       = path.join(PROJECT_ROOT, '.claude', 'plugin-data', 'nexscope');
 export const CONFIG_PATH    = path.join(DATA_DIR, 'config.json');
 export const SESSION_PATH   = path.join(DATA_DIR, 'session.json');
 export const SESSION_ERROR  = path.join(DATA_DIR, 'session-error.json');
 // IPC endpoint:
-//  - *nix: unix domain socket at DATA_DIR/daemon.sock
-//  - Windows: named pipe at \\.\pipe\nexscope-daemon-<8-hex-of-hashed-home>
+//  - *nix: unix domain socket at DATA_DIR/daemon.sock — one socket per project
+//  - Windows: named pipe at \\.\pipe\nexscope-daemon-<8-hex-of-hashed-cwd>
 //    (cannot be an on-disk file; AF_UNIX on Windows hits EACCES on some
-//     NTFS layouts; named pipes are the portable choice.)
+//     NTFS layouts; named pipes are the portable choice. Hashing CWD lets
+//     multiple projects on the same host coexist without collision.)
 export const SOCKET_PATH    = IS_WIN
-  ? `\\\\.\\pipe\\nexscope-daemon-${crypto.createHash('sha1').update(os.homedir()).digest('hex').slice(0, 8)}`
+  ? `\\\\.\\pipe\\nexscope-daemon-${crypto.createHash('sha1').update(PROJECT_ROOT).digest('hex').slice(0, 8)}`
   : path.join(DATA_DIR, 'daemon.sock');
 export const DAEMON_LOG     = path.join(DATA_DIR, 'daemon.log');
 export const PENDING_NOTIFS = path.join(DATA_DIR, 'pending_notifications.jsonl');

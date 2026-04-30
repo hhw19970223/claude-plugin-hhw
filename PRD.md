@@ -216,7 +216,7 @@ Bob is online at home with `-n bob`. Company-Bob's machine also tries `-n bob` �
 - Auto mode does not write the inbox, but still prints every message as a notification.
 
 ### FR-5 Inbox (manual mode)
-- File: `~/.claude/plugin-data/nexscope/inbox.jsonl`
+- File: `./.claude/plugin-data/nexscope/inbox.jsonl`
 - Entry: `{threadId, from, role, mentions, text, ts, status:"pending"}`
 - Skills:
   - `/nexscope:inbox` — lists pending + recent archived items
@@ -245,8 +245,8 @@ Bob is online at home with `-n bob`. Company-Bob's machine also tries `-n bob` �
 
 ### FR-10 Identity, auth & config sources
 - **Connection info comes from the plugin config file** (not from env):
-  - Path: `~/.claude/plugin-data/nexscope/config.json` (decoupled from the plugin dir so plugin upgrades don't wipe user data)
-  - On first launch, if the file is missing it is copied from the plugin's `config.example.json` with the message `Initialized ~/.claude/plugin-data/nexscope/config.json, fill in relayUrl and token, then rerun.`
+  - Path: `./.claude/plugin-data/nexscope/config.json` (decoupled from the plugin dir so plugin upgrades don't wipe user data)
+  - On first launch, if the file is missing it is copied from the plugin's `config.example.json` with the message `Initialized ./.claude/plugin-data/nexscope/config.json, fill in relayUrl and token, then rerun.`
   - Fields: `relayUrl`, `token`, `defaultName` (optional), `mode` (default `manual`), `hopLimit` (default `3`), `peerIndexMap` (optional)
   - Missing required fields or any remaining `REPLACE_ME` placeholder → init fails with a clear error
   - File mode fixed at `0600` (owner-only read/write), enforced via `chmod` on boot; v1 does not use a keychain (plaintext + permissions is sufficient)
@@ -386,7 +386,7 @@ Broadcast to every connection whenever the room membership changes; clients diff
 
 ### 8.6 Plugin config file (primary)
 
-**Path**: `~/.claude/plugin-data/nexscope/config.json` (**not** under the plugin dir — keeps user data separate from plugin code so upgrades/reinstalls don't overwrite config)
+**Path**: `./.claude/plugin-data/nexscope/config.json` (**not** under the plugin dir — keeps user data separate from plugin code so upgrades/reinstalls don't overwrite config)
 
 **Schema**:
 ```json
@@ -411,8 +411,8 @@ Broadcast to every connection whenever the room membership changes; clients diff
 
 **Distribution & init convention**:
 - The repo ships `config.example.json` where every sensitive field is `REPLACE_ME` and **no relay URL is pre-filled** (there is no public relay — avoids misleading users).
-- The user's real config lives at `~/.claude/plugin-data/nexscope/config.json` (the plugin dir itself only holds the example, which is safe to commit).
-- On plugin startup, if `~/.claude/plugin-data/nexscope/config.json` is missing, it's copied from the plugin's `config.example.json` and chmodded to `0600`; the plugin then aborts boot and prompts the user to fill it in.
+- The user's real config lives at `./.claude/plugin-data/nexscope/config.json` (the plugin dir itself only holds the example, which is safe to commit).
+- On plugin startup, if `./.claude/plugin-data/nexscope/config.json` is missing, it's copied from the plugin's `config.example.json` and chmodded to `0600`; the plugin then aborts boot and prompts the user to fill it in.
 - Any required field still equal to `REPLACE_ME` triggers a "not configured" error pointing at that file path.
 
 ### 8.7 Environment variables (optional overrides)
@@ -489,7 +489,7 @@ Use cases: temporary relay switching for debugging, multi-account testing, CI en
 | **Q-10** | After `/nexscope:accept`, should Claude publicly announce "done"? Or only send a final result message? | Propose: auto-post a brief summary as `userAgent` to the same thread after completion. TBD |
 
 > **Decided (v0.3.1)**:
-> - Config file path = `~/.claude/plugin-data/nexscope/config.json` (decoupled from plugin dir)
+> - Config file path = `./.claude/plugin-data/nexscope/config.json` (decoupled from plugin dir)
 > - `config.example.json` pre-fills no relay URL; every field is `REPLACE_ME`
 > - Token storage = plaintext file + `chmod 0600` (v1 does not use a keychain)
 
