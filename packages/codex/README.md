@@ -56,9 +56,11 @@ The behavior is specified by [AGENTS.md.fragment](AGENTS.md.fragment) — paste 
 | `nexscope_reject` | Reject a pending thread and send a refusal |
 | `nexscope_append` | Append a role=user line to an existing thread |
 | `nexscope_update` | `git pull && npm install` the plugin source |
-| `nexscope_poll` | **New, Codex-specific**: drain queued notifications + return pending auto_tasks + online list |
+| `nexscope_poll` | **Codex-specific**: drain queued notifications once, return pending auto_tasks + online list |
+| `nexscope_watch` | **Codex-specific**: long-poll — block until an event arrives or `timeoutSeconds` elapses |
+| `nexscope_before_stop` | **Codex-specific Stop-equivalent**: call just before ending a turn; returns `can_stop:false` if auto-mode still has pending @mentions |
 
-`nexscope_poll` exists because Codex has no hook system equivalent to Claude Code's `UserPromptSubmit` or `Stop`. Instead of auto-injecting events, Codex explicitly queries each turn.
+`nexscope_poll` / `nexscope_watch` / `nexscope_before_stop` exist because Codex has no hook system equivalent to Claude Code's `UserPromptSubmit` / `Stop` / `asyncRewake`. Instead of auto-injecting events and auto-blocking stops, Codex explicitly queries each turn: `poll` at the start, optionally `watch` while waiting, and `before_stop` at the end to enforce auto-reply obligations.
 
 ## Auto mode compatibility
 

@@ -19,6 +19,36 @@ The backing daemon runs per-project under `./.claude/plugin-data/nexscope/`.
 After polling, if `events` is non-empty, briefly acknowledge what arrived
 (or act on it) before handing control to the user's request.
 
+## Every turn, do this LAST
+
+**Before ending your response, call `nexscope_before_stop`.** This is the
+Stop-equivalent gate:
+
+- Returns `{can_stop: true}` in manual mode, or when no fresh auto-tasks
+  remain — safe to finish.
+- Returns `{can_stop: false, auto_tasks: [...], instruction: ...}` if
+  there are still @mentions needing an auto-reply. **You must handle
+  each task before stopping.** Call `nexscope_say` on the matching
+  `threadId`, then call `nexscope_before_stop` again to confirm.
+
+This is the hard gate that prevents the nexscope auto-mode equivalent of
+"forgot to reply" — Codex has no Stop hook the way Claude Code does, so
+you enforce it yourself.
+
+## Waiting for a reply in the same turn
+
+If the user says something like "wait for bob to respond" or "hang on
+until we hear back", call **`nexscope_watch`** instead of ending the
+turn. It blocks for up to 120 seconds (default 30) and returns as soon
+as any event arrives — new message, presence change, file received, etc.
+
+`nexscope_watch` drains `pending_notifications` just like `nexscope_poll`
+does. Use it in place of `nexscope_poll` at the start of a turn when you
+explicitly want to wait.
+
+Do not call it more than once per turn unless the first call timed out
+and you want another bounded wait window.
+
 ## Auto mode (replying to mentions without the user asking)
 
 When `session.mode === "auto"` **and** `auto_tasks` is non-empty:

@@ -262,6 +262,110 @@ async function toolAppend(args) {
   return textResult(`appended (role=user) to thread=${ack.threadId}; delivered: [${ack.delivered.join(', ')}]${ack.offline.length ? `, offline: [${ack.offline.join(', ')}]` : ''}`);
 }
 
+// Long-poll: blocks until new events arrive in pending_notifications OR the
+// timeout elapses. Short-circuits if events are already queued. Unlike
+// nexscope_poll (which always returns immediately), nexscope_watch is the
+// closest Codex equivalent to Claude Code's asyncRewake hook — the model
+// stays occupied in a tool call until something happens.
+//
+// Caveat: because MCP tools are request/response and Codex does not invoke
+// tools while idle (waiting for user input), watch only runs during the
+// model's active turn. For true "idle-time wake-up" you still need a
+// human-initiated turn — MCP/Codex has no async revival.
+async function toolWatch(args) {
+  const timeoutSec = Math.min(Math.max(parseInt(args.timeoutSeconds ?? 30, 10), 1), 120);
+  const deadline = Date.now() + timeoutSec * 1000;
+  const pollMs = 250;
+
+  const snapshot = () => {
+    const session = readJsonOrNull(SESSION_PATH);
+    const alive = session && pidAlive(session.pid);
+    return { session, alive };
+  };
+
+  // Immediate drain check.
+  let first = snapshot();
+  if (!first.alive) return jsonResult({ events: [], auto_tasks: [], daemon: 'not_running', timed_out: false });
+  const early = drainJsonl(PENDING_NOTIFS);
+  if (early.length) {
+    const auto_tasks = readJsonlAll(PENDING_AUTO);
+    let online = [];
+    try { online = (await callDaemon('who')).users || []; } catch {}
+    return jsonResult({
+      events: early.map(formatEvent),
+      auto_tasks,
+      online,
+      session: { name: first.session.name, mode: first.session.mode, hopLimit: first.session.hopLimit },
+      timed_out: false,
+    });
+  }
+
+  // Otherwise, long-poll.
+  while (Date.now() < deadline) {
+    await new Promise(r => setTimeout(r, pollMs));
+    const cur = snapshot();
+    if (!cur.alive) {
+      return jsonResult({ events: [], auto_tasks: [], daemon: 'died_while_watching', timed_out: false });
+    }
+    const rows = drainJsonl(PENDING_NOTIFS);
+    if (rows.length) {
+      const auto_tasks = readJsonlAll(PENDING_AUTO);
+      let online = [];
+      try { online = (await callDaemon('who')).users || []; } catch {}
+      return jsonResult({
+        events: rows.map(formatEvent),
+        auto_tasks,
+        online,
+        session: { name: cur.session.name, mode: cur.session.mode, hopLimit: cur.session.hopLimit },
+        timed_out: false,
+      });
+    }
+  }
+
+  // Timed out — report auto_tasks so auto-mode can still react to anything
+  // that arrived out-of-band.
+  const auto_tasks = readJsonlAll(PENDING_AUTO);
+  return jsonResult({
+    events: [],
+    auto_tasks,
+    online: [],
+    session: first.session ? { name: first.session.name, mode: first.session.mode, hopLimit: first.session.hopLimit } : null,
+    timed_out: true,
+  });
+}
+
+// Stop-equivalent: called before Codex finishes a turn. Reports whether the
+// session has unfinished auto-reply obligations, so AGENTS.md can turn that
+// into a hard gate ("do not stop if pending_auto_tasks is non-empty"). Does
+// NOT drain pending_notifications (that's nexscope_poll's / nexscope_watch's
+// job) — this call is side-effect-free; safe to invoke at any point.
+async function toolBeforeStop() {
+  const session = readJsonOrNull(SESSION_PATH);
+  if (!session || !pidAlive(session.pid)) {
+    return jsonResult({ can_stop: true, reason: 'daemon not running' });
+  }
+  if (session.mode !== 'auto') {
+    return jsonResult({ can_stop: true, reason: `mode=${session.mode}; no auto-reply obligations` });
+  }
+  const auto_tasks = readJsonlAll(PENDING_AUTO);
+  // Tasks older than 5 minutes are considered abandoned — hook-stop.js in
+  // the Claude Code side already treats them as "Claude decided not to
+  // reply". Match that behavior here.
+  const FRESH_MS = 5 * 60 * 1000;
+  const fresh = auto_tasks.filter(t => (Date.now() - (t.ts || 0)) < FRESH_MS);
+  if (!fresh.length) {
+    return jsonResult({ can_stop: true, reason: 'no fresh auto tasks', expired: auto_tasks.length });
+  }
+  return jsonResult({
+    can_stop: false,
+    reason: `${fresh.length} pending @mention(s) require a reply in auto mode`,
+    auto_tasks: fresh,
+    instruction:
+      'For each task, call nexscope_say with to=<task.from>, threadId=<task.threadId>, text=<your reply>. ' +
+      'The daemon will clear the task and bump hopCount. Once all are cleared, call nexscope_before_stop again to confirm can_stop:true.',
+  });
+}
+
 async function toolUpdate() {
   // Delegate to the claude-code update.js by spawning it and collecting stdout.
   const updatePath = path.resolve(path.dirname(__filename), '..', '..', 'claude-code', 'scripts', 'update.js');
@@ -406,9 +510,35 @@ const TOOLS = [
   {
     name: 'nexscope_poll',
     description:
-      'Drain queued notifications for this session — presence changes, incoming messages, file-transfer events, system notices — and return them once. Call this at the START of every turn (or when the user asks what is new) so Codex becomes aware of activity that happened outside this turn. Also returns pending_auto_tasks and the online user list. Each notification is consumed on return; subsequent polls only see newer events.',
+      'Drain queued notifications for this session — presence changes, incoming messages, file-transfer events, system notices — and return them once. Call this at the START of every turn (or when the user asks what is new) so Codex becomes aware of activity that happened outside this turn. Also returns pending_auto_tasks and the online user list. Each notification is consumed on return; subsequent polls only see newer events. Non-blocking: returns immediately whether or not events exist.',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
     handler: toolPoll,
+  },
+  {
+    name: 'nexscope_watch',
+    description:
+      'Long-poll: block until a new event arrives in the chat room, or until the timeout elapses. Returns the same shape as nexscope_poll. Use this when the user asks to wait for a reply, or when you expect a response shortly and want to catch it in this turn instead of waiting for the next. Does not help with idle-time wake-up (Codex tools only run during active turns), but it does let a single turn absorb events that arrive a few seconds later. Drains pending_notifications on return.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        timeoutSeconds: {
+          type: 'integer',
+          minimum: 1,
+          maximum: 120,
+          default: 30,
+          description: 'How long to wait for an event before returning empty. Default 30s, max 120s.',
+        },
+      },
+      additionalProperties: false,
+    },
+    handler: toolWatch,
+  },
+  {
+    name: 'nexscope_before_stop',
+    description:
+      'Stop-equivalent gate for auto mode. Call this JUST BEFORE ending your response to the user. If it returns can_stop=false, it means there are fresh @mentions awaiting an auto-reply — you must handle them (via nexscope_say on the matching threadId) and call this again until can_stop=true, before finishing. Does NOT drain the notification queue; safe to call multiple times. In manual mode it always returns can_stop=true (mentions go to the inbox, handled by the human).',
+    inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    handler: toolBeforeStop,
   },
 ];
 
