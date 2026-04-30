@@ -4,24 +4,41 @@ MCP stdio server that exposes the nexscope chat room to [Codex CLI](https://gith
 
 Reuses the same daemon / IPC / state directory as the Claude Code plugin — if you run both side-by-side in one project, they talk to the **same** daemon and share the inbox/history.
 
-## Install
-
-From the monorepo root:
+## Install (2 commands)
 
 ```bash
-git clone https://github.com/hhw19970223/claude-plugin-hhw.git ~/claude-plugin-hhw
-cd ~/claude-plugin-hhw && npm install
+git clone https://github.com/hhw19970223/claude-plugin-hhw.git ~/claude-plugin-hhw \
+  && cd ~/claude-plugin-hhw && npm install
+node ~/claude-plugin-hhw/packages/codex/bin/install-codex.mjs
 ```
 
-Then register the MCP server in Codex's `~/.codex/config.toml`:
+The second command writes a `[mcp_servers.nexscope]` section into your `~/.codex/config.toml` with the correct absolute path. It's **idempotent** — rerun it after `git pull` to refresh the path, or pass `--uninstall` to remove. Use `--dry-run` to preview the change, or `--name=<alias>` to register under a different key.
+
+Restart Codex and the `nexscope_*` tools (14 total) will appear in its tool list.
+
+### Manual alternative
+
+If you prefer to edit the config yourself:
 
 ```toml
+# ~/.codex/config.toml
 [mcp_servers.nexscope]
 command = "node"
 args    = ["/Users/YOU/claude-plugin-hhw/packages/codex/src/mcp-server.js"]
 ```
 
-Restart Codex. The `nexscope_*` tools should appear in its tool list.
+### Updating
+
+```bash
+cd ~/claude-plugin-hhw && git pull && npm install
+node packages/codex/bin/install-codex.mjs    # refreshes the path, idempotent
+```
+
+### Uninstalling
+
+```bash
+node ~/claude-plugin-hhw/packages/codex/bin/install-codex.mjs --uninstall
+```
 
 ## First use
 

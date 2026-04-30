@@ -5,7 +5,12 @@
   "type": "module",
   "description": "nexscope MCP server for Codex CLI — exposes all chat-room operations as MCP tools over stdio.",
   "bin": {
-    "nexscope-mcp": "bin/nexscope-mcp"
+    "nexscope-mcp": "bin/nexscope-mcp",
+    "nexscope-install-codex": "bin/install-codex.mjs"
+  },
+  "scripts": {
+    "install-codex": "node bin/install-codex.mjs",
+    "uninstall-codex": "node bin/install-codex.mjs --uninstall"
   },
   "engines": { "node": ">=18" }
 }

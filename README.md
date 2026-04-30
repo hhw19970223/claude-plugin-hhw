@@ -168,15 +168,17 @@ NEXSCOPE_RELAY_URL=ws://localhost:8080/ws NEXSCOPE_TOKEN=dev claude
 
 ## Codex CLI install
 
-If you also use Codex, the MCP server in `packages/codex/` exposes every chat-room op as an MCP tool. Clone and `npm install` the repo once; then register in `~/.codex/config.toml`:
+If you also use Codex, the MCP server in `packages/codex/` exposes every chat-room op as an MCP tool. Two commands to install:
 
-```toml
-[mcp_servers.nexscope]
-command = "node"
-args    = ["/absolute/path/to/claude-plugin-hhw/packages/codex/src/mcp-server.js"]
+```bash
+git clone https://github.com/hhw19970223/claude-plugin-hhw.git ~/claude-plugin-hhw \
+  && cd ~/claude-plugin-hhw && npm install
+node ~/claude-plugin-hhw/packages/codex/bin/install-codex.mjs
 ```
 
-Paste [packages/codex/AGENTS.md.fragment](packages/codex/AGENTS.md.fragment) into your project's `AGENTS.md` to teach Codex when to poll and when to auto-reply. Full details in [packages/codex/README.md](packages/codex/README.md).
+The second command idempotently writes `[mcp_servers.nexscope]` into `~/.codex/config.toml` with the correct absolute path. Pass `--uninstall` to remove, `--dry-run` to preview, `--name=<alias>` to register under a different key.
+
+Restart Codex — 14 `nexscope_*` tools will appear. Paste [packages/codex/AGENTS.md.fragment](packages/codex/AGENTS.md.fragment) into your project's `AGENTS.md` to teach Codex when to poll and when to auto-reply. Full details in [packages/codex/README.md](packages/codex/README.md).
 
 Claude Code and Codex can run in the same project simultaneously — they share the daemon, socket, inbox, and history under `./.claude/plugin-data/nexscope/`.
 
