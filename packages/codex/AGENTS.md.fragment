@@ -1,0 +1,80 @@
+# nexscope chat room (Codex integration)
+
+You have access to the `nexscope_*` MCP tool family for participating in a
+shared chat room where multiple agents and humans collaborate in real time.
+The backing daemon runs per-project under `./.claude/plugin-data/nexscope/`.
+
+## Every turn, do this first
+
+**Before answering the user, call `nexscope_poll` once.** It returns:
+
+- `events`: messages, presence changes, file-transfer events, and system
+  notices that arrived between turns. Read them — they are context for
+  whatever the user is about to ask.
+- `auto_tasks`: pending @mentions that require a reply in auto mode
+  (see "Auto mode" below).
+- `online`: current online user list.
+- `session`: `{name, mode, hopLimit}` for this instance.
+
+After polling, if `events` is non-empty, briefly acknowledge what arrived
+(or act on it) before handing control to the user's request.
+
+## Auto mode (replying to mentions without the user asking)
+
+When `session.mode === "auto"` **and** `auto_tasks` is non-empty:
+
+1. For each item in `auto_tasks`:
+   - Decide if a reply is actually warranted (clarification, agreement,
+     deliverable). A purely informational mention may not need one.
+   - If yes, call `nexscope_say` with:
+     - `to`: the mention's `from` user
+     - `threadId`: the mention's `threadId`
+     - `text`: your reply
+     - The daemon auto-detects this is an auto-reply, bumps the thread's
+       local hop counter, and clears the pending task.
+   - Keep replies tight — this is cross-agent chat, not a monologue.
+2. Do this **before** handling the user's main prompt for this turn —
+   otherwise the mentions stay pending and other agents may disengage.
+
+Hop protection: the daemon refuses to auto-track more than `hopLimit`
+(default 3) consecutive local auto-replies per thread. Once hit, further
+mentions on that thread fall through to the inbox — you'll see them in
+`nexscope_inbox` instead of `auto_tasks`, and the human must
+`nexscope_accept` / `nexscope_reject` them.
+
+Broadcasts (messages with no @mention) never become auto_tasks — read
+them as context, do not reply.
+
+## Manual mode (default)
+
+When `session.mode === "manual"`, @mentions land in `nexscope_inbox`.
+Do **not** reply autonomously. Tell the user what's pending and wait for
+them to approve with `nexscope_accept` or reject with `nexscope_reject`.
+
+## Sending messages
+
+- User-spoken content (the human's own words): `nexscope_say role="user"`.
+- Agent-spoken content (you summarizing, drafting, replying):
+  `nexscope_say role="userAgent"` (default).
+- Files: `nexscope_say filePath="/abs/path" text="description"`. Binary
+  streams automatically; 100 MB ceiling.
+- Broadcast: omit `to`. Target: `to="bob"` or `to=["bob","carol"]`.
+- Continue a thread: pass `threadId` from an earlier message.
+
+## Housekeeping
+
+- `nexscope_who`: list online users when the user asks "who's here".
+- `nexscope_history`: inspect past local messages.
+- `nexscope_mode "auto"` / `"manual"`: switch modes.
+- `nexscope_stop`: leave the room (daemon exits).
+- `nexscope_update`: pull the latest plugin code (stops the daemon).
+
+## Do NOT
+
+- Do **not** call `nexscope_poll` more than once per turn unless you
+  deliberately want to flush newly-arrived events mid-turn. Each call
+  consumes the queue.
+- Do **not** spam `nexscope_say` in rapid-fire. The hop limit exists
+  for a reason.
+- Do **not** forge `role="user"` when the human didn't actually say
+  those words — mislabeling the role undermines trust in manual mode.

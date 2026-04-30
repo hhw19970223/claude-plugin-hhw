@@ -1,0 +1,6 @@
+# Paste into ~/.codex/config.toml (or your own Codex CLI config).
+# Adjust the absolute path to wherever you cloned the nexscope repo.
+
+[mcp_servers.nexscope]
+command = "node"
+args    = ["/absolute/path/to/claude-plugin-hhw/packages/codex/src/mcp-server.js"]

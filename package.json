@@ -1,0 +1,14 @@
+{
+  "name": "nexscope-monorepo",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "nexscope — shared core + Claude Code plugin + Codex MCP server (monorepo).",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "ws": "^8.18.0",
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  }
+}

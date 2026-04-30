@@ -1,8 +1,17 @@
-# nexscope — H2A2A2H Chat-Room Plugin for Claude Code
+# nexscope — H2A2A2H Chat-Room Plugins (Claude Code + Codex)
 
-Lets multiple Claude Code instances share a single chat room over a WebSocket relay — @mention, broadcast, transfer files. Supports two reply modes: **manual** (default) and **auto**.
+Lets multiple AI coding agents (Claude Code, Codex CLI) and humans share a single chat room over a WebSocket relay — @mention, broadcast, transfer files. Supports two reply modes: **manual** (default) and **auto**.
 
-Spec & protocol references: [PRD.md](PRD.md) (v0.4) and [PROTOCOL.md](PROTOCOL.md) (v1).
+This repo is a monorepo with two packages over one shared daemon:
+
+| Package | Client | Entry point |
+|---|---|---|
+| [packages/claude-code/](packages/claude-code) | Claude Code | 11 slash commands (`/nexscope:start`, `/nexscope:say`, …) + UserPromptSubmit / Stop hooks |
+| [packages/codex/](packages/codex) | Codex CLI | MCP stdio server exposing 12 tools (`nexscope_start`, `nexscope_say`, `nexscope_poll`, …) |
+
+Both clients share the **same** per-project daemon, socket, inbox, and history under `./.claude/plugin-data/nexscope/`.
+
+Spec references: [PRD.md](PRD.md) (v0.4) and [PROTOCOL.md](PROTOCOL.md) (v1).
 
 ## Quick Install
 
@@ -157,33 +166,46 @@ NEXSCOPE_RELAY_URL=ws://localhost:8080/ws NEXSCOPE_TOKEN=dev claude
 /nexscope:accept <tid>       # Claude executes the request
 ```
 
+## Codex CLI install
+
+If you also use Codex, the MCP server in `packages/codex/` exposes every chat-room op as an MCP tool. Clone and `npm install` the repo once; then register in `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.nexscope]
+command = "node"
+args    = ["/absolute/path/to/claude-plugin-hhw/packages/codex/src/mcp-server.js"]
+```
+
+Paste [packages/codex/AGENTS.md.fragment](packages/codex/AGENTS.md.fragment) into your project's `AGENTS.md` to teach Codex when to poll and when to auto-reply. Full details in [packages/codex/README.md](packages/codex/README.md).
+
+Claude Code and Codex can run in the same project simultaneously — they share the daemon, socket, inbox, and history under `./.claude/plugin-data/nexscope/`.
+
 ## Directory Layout
 
 ```
-claude-plugin-hhw/                        # git repo / marketplace root
-├── .claude-plugin/marketplace.json       # marketplace manifest (lists the nexscope plugin)
-├── plugins/nexscope/                     # nexscope plugin root (CLAUDE_PLUGIN_ROOT)
-│   ├── .claude-plugin/plugin.json        # plugin manifest
-│   ├── commands/*.md                     # 11 slash commands
-│   ├── hooks/hooks.json                  # UserPromptSubmit + Stop
-│   ├── scripts/                          # node implementation
-│   │   ├── config.js state.js log.js         # infrastructure
-│   │   ├── ipc-client.js ipc-server.js       # IPC over unix socket
-│   │   ├── ws-client.js                      # relay WebSocket wrapper + reconnect
-│   │   ├── daemon.js                         # long-running main process
-│   │   ├── start.js stop.js update.js        # lifecycle
-│   │   ├── say.js who.js mode.js history.js  # core commands
-│   │   ├── inbox.js accept.js reject.js      # inbox flow
-│   │   ├── append.js
-│   │   ├── hook-pre-prompt.js                # UserPromptSubmit hook
-│   │   └── hook-stop.js                      # Stop hook (blocks during auto mode)
-│   ├── config.example.json               # placeholder template
-│   └── package.json                      # depends on ws@^8
+claude-plugin-hhw/                        # git repo (monorepo, single marketplace root)
+├── .claude-plugin/marketplace.json       # marketplace manifest → ./packages/claude-code
+├── package.json                          # root deps: ws + @modelcontextprotocol/sdk
+├── packages/
+│   ├── claude-code/                      # Claude Code plugin (CLAUDE_PLUGIN_ROOT)
+│   │   ├── .claude-plugin/plugin.json
+│   │   ├── commands/*.md                 # 11 slash commands
+│   │   ├── hooks/hooks.json              # UserPromptSubmit + Stop
+│   │   ├── scripts/                      # node implementation (daemon + ipc + commands + hooks)
+│   │   ├── config.example.json
+│   │   └── package.json                  # ws dep (consumed by daemon)
+│   └── codex/                            # Codex CLI MCP server
+│       ├── src/mcp-server.js             # stdio MCP server, 12 tools
+│       ├── bin/nexscope-mcp              # executable shim
+│       ├── AGENTS.md.fragment            # paste into your project's AGENTS.md
+│       ├── config.toml.example           # Codex config snippet
+│       ├── package.json
+│       └── README.md
 ├── PRD.md PROTOCOL.md                    # spec docs
 └── README.md                             # this file
 ```
 
-> The repo root is also a **single-plugin marketplace**: `.claude-plugin/marketplace.json` has `source: "./plugins/nexscope"` telling Claude Code the actual plugin lives in the subdirectory. This nested layout is the standard structure for official marketplaces — do not put `plugin.json` at the repo root (Claude Code won't recognize it).
+> The repo root is also a **single-plugin marketplace**: `.claude-plugin/marketplace.json` has `source: "./packages/claude-code"` telling Claude Code the Claude-Code-facing plugin lives in the subdirectory.
 
 > The relay server is not distributed with this plugin — implement one against [PROTOCOL.md](PROTOCOL.md) or clone it separately.
 

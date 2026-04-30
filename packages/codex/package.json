@@ -1,0 +1,11 @@
+{
+  "name": "nexscope-codex",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "nexscope MCP server for Codex CLI — exposes all chat-room operations as MCP tools over stdio.",
+  "bin": {
+    "nexscope-mcp": "bin/nexscope-mcp"
+  },
+  "engines": { "node": ">=18" }
+}

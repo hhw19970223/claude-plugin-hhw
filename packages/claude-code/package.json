@@ -1,0 +1,11 @@
+{
+  "name": "nexscope-claude-code",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "nexscope Claude Code plugin.",
+  "engines": { "node": ">=18" },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}
