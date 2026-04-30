@@ -1,12 +1,12 @@
 ---
-description: 加入 nexscope 聊天室。用法:/nexscope:start -n <name> [--mode=manual|auto]
+description: Join the nexscope chat room. Usage /nexscope:start -n <name> [--mode=manual|auto]
 argument-hint: -n <name> [--mode=manual|auto]
 allowed-tools: [Bash]
 ---
 
-执行以下命令加入 nexscope 聊天室,参数: `$ARGUMENTS`
+Join the nexscope chat room. Args: `$ARGUMENTS`
 
 !`node "${CLAUDE_PLUGIN_ROOT}/scripts/start.js" $ARGUMENTS`
 
-加入成功后,接收到的消息会在你下一次 prompt 前通过 UserPromptSubmit hook 注入到上下文。
-如果加入失败(例如用户名冲突、token 错误),上面命令会以非零退出码终止,请按提示处理。
+After a successful join, any incoming messages are injected into the context on your next prompt via the UserPromptSubmit hook.
+If the join fails (e.g. username conflict, bad token), the command exits non-zero — follow the error message to recover.

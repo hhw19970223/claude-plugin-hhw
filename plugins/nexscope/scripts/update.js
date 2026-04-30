@@ -99,7 +99,7 @@ function run(cmd, label, cwd) {
 async function stopDaemonIfRunning() {
   const s = readJsonOrNull(SESSION_PATH);
   if (!s || !pidAlive(s.pid)) return false;
-  userOut(`==> 检测到正在运行的 nexscope daemon (pid=${s.pid}, name=${s.name}),先关停以便加载新代码...`);
+  userOut(`==> Detected running nexscope daemon (pid=${s.pid}, name=${s.name}); stopping it first so the new code can load...`);
   try {
     const { callDaemon } = await import('./ipc-client.js');
     await callDaemon('shutdown', {}, { timeoutMs: 3000 });
@@ -120,12 +120,12 @@ async function main() {
   // --- Strategy A: local clone ---------------------------------------------
   const localGitRoot = findGitRoot(PLUGIN_ROOT);
   if (localGitRoot) {
-    userOut(`==> 检测到本地 clone 安装 (repo=${localGitRoot})`);
+    userOut(`==> Local-clone install detected (repo=${localGitRoot})`);
     try {
       run('git pull --ff-only', 'git pull', localGitRoot);
       run('npm install --no-audit --no-fund', 'npm install', PLUGIN_ROOT);
     } catch (e) {
-      userErr(`更新失败: ${e.message}`);
+      userErr(`Update failed: ${e.message}`);
       process.exit(1);
     }
     finishBanner(prev, 'local-clone');
@@ -135,7 +135,7 @@ async function main() {
   // --- Strategy B: marketplace install -------------------------------------
   const mname = inferMarketplaceName(PLUGIN_ROOT);
   if (!mname) {
-    userErr(`无法识别安装方式:PLUGIN_ROOT=${PLUGIN_ROOT} 既不是 git 仓库,也不在 Claude Code 的 marketplace 路径下。\n请手动在原仓库 git pull 后重装插件。`);
+    userErr(`Cannot determine install mode: PLUGIN_ROOT=${PLUGIN_ROOT} is not a git repo and is not under a Claude Code marketplace path.\nRun git pull manually in the source repo, then reinstall the plugin.`);
     process.exit(1);
   }
 
@@ -143,45 +143,45 @@ async function main() {
   const entry = known[mname];
   const marketRoot = entry?.installLocation;
   if (!marketRoot || !fs.existsSync(path.join(marketRoot, '.git'))) {
-    userErr(`marketplace "${mname}" 的 git 仓库未找到(期望在 ${marketRoot || '<unknown>'})。\n请在 Claude Code 里执行:/plugin marketplace update ${mname}`);
+    userErr(`Git clone for marketplace "${mname}" not found (expected at ${marketRoot || '<unknown>'}).\nRun inside Claude Code: /plugin marketplace update ${mname}`);
     process.exit(1);
   }
 
-  userOut(`==> 检测到 marketplace 安装 (market=${mname}, source=${marketRoot})`);
-  userOut(`    PLUGIN_ROOT (cache 副本) = ${PLUGIN_ROOT}`);
+  userOut(`==> Marketplace install detected (market=${mname}, source=${marketRoot})`);
+  userOut(`    PLUGIN_ROOT (cache copy) = ${PLUGIN_ROOT}`);
 
   try {
     run('git pull --ff-only', `git pull [${mname}]`, marketRoot);
   } catch (e) {
-    userErr(`git pull 失败: ${e.message}`);
+    userErr(`git pull failed: ${e.message}`);
     process.exit(1);
   }
 
   // After pull, sync the plugin subdir from marketplace source → cache copy.
   const pluginName = inferPluginName();
   if (!pluginName) {
-    userErr(`无法从 ${PLUGIN_ROOT}/.claude-plugin/plugin.json 读出插件名。`);
+    userErr(`Could not read plugin name from ${PLUGIN_ROOT}/.claude-plugin/plugin.json.`);
     process.exit(1);
   }
   const srcSubdir = inferPluginSubdir(marketRoot, pluginName);
   if (!srcSubdir) {
-    userErr(`在 ${marketRoot} 里找不到插件 "${pluginName}" 的子目录。\n请在 Claude Code 里执行:/plugin marketplace update ${mname}`);
+    userErr(`Plugin subdirectory "${pluginName}" not found under ${marketRoot}.\nRun inside Claude Code: /plugin marketplace update ${mname}`);
     process.exit(1);
   }
 
-  userOut(`\n==> sync 新版插件文件`);
+  userOut(`\n==> Syncing new plugin files`);
   userOut(`    ${srcSubdir}  →  ${PLUGIN_ROOT}`);
   try {
     syncDir(srcSubdir, PLUGIN_ROOT);
   } catch (e) {
-    userErr(`文件同步失败: ${e.message}`);
+    userErr(`File sync failed: ${e.message}`);
     process.exit(1);
   }
 
   try {
     run('npm install --no-audit --no-fund', 'npm install', PLUGIN_ROOT);
   } catch (e) {
-    userErr(`npm install 失败: ${e.message}`);
+    userErr(`npm install failed: ${e.message}`);
     process.exit(1);
   }
 
@@ -189,11 +189,11 @@ async function main() {
 }
 
 function finishBanner(prev, mode) {
-  userOut(`\n✓ nexscope 插件已更新 (mode=${mode})。`);
+  userOut(`\n✓ nexscope plugin updated (mode=${mode}).`);
   if (prev && prev.wasRunning) {
-    userOut(`提示:daemon 已关停;用 /nexscope:start -n ${prev.name} --mode=${prev.mode} 重启。`);
+    userOut(`Tip: daemon was stopped; restart with /nexscope:start -n ${prev.name} --mode=${prev.mode}`);
   }
-  userOut('提示:改到了 hooks/ 或 .claude-plugin/plugin.json 的话,需重启 Claude Code 才生效。');
+  userOut('Tip: if hooks/ or .claude-plugin/plugin.json changed, restart Claude Code for it to take effect.');
 }
 
 main().catch((e) => {

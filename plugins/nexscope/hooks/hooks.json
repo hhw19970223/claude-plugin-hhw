@@ -24,8 +24,8 @@
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/hook-watch-notifications.js\"",
             "async": true,
             "asyncRewake": true,
-            "rewakeMessage": "[nexscope] 聊天室来新消息:",
-            "rewakeSummary": "nexscope 收到新消息"
+            "rewakeMessage": "[nexscope] new chat-room messages:",
+            "rewakeSummary": "nexscope: new messages"
           }
         ]
       }

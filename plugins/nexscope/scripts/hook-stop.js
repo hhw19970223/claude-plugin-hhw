@@ -43,12 +43,12 @@ async function main() {
   ).join('\n');
 
   const reason =
-`[NEXSCOPE AUTO MODE] 你在聊天室收到以下未回复的点名消息(mode=auto,当前 user=${session.name}):
+`[NEXSCOPE AUTO MODE] You have unanswered @mentions in the chat room (mode=auto, current user=${session.name}):
 
 ${summary}
 
-请为每条用 \`/nexscope:say --thread=<threadId> @<from> <你的回复>\` 发送回复;回复后 daemon 会自动把该 thread 的 hopCount+1 并清空 pending。
-如果你认为不需要回复(例如只是告知),可用 \`/nexscope:mode manual\` 暂时退出 auto,或直接再次结束(5 分钟后任务自动降级到 inbox)。`;
+Reply to each with \`/nexscope:say --thread=<threadId> @<from> <your reply>\`. After replying, the daemon auto-increments the thread's hopCount and clears the pending task.
+If you decide not to reply (e.g. the mention was informational), run \`/nexscope:mode manual\` to exit auto mode, or just stop again (tasks older than 5 min are auto-downgraded to inbox).`;
 
   blockWith(reason);
 }

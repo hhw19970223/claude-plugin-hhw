@@ -49,7 +49,7 @@ function loadRawConfig() {
   if (existing) return existing;
   initConfigFile();
   throw new ConfigError(
-    `已初始化 ${CONFIG_PATH}\n请填入 relayUrl、token、defaultName(去掉 ${PLACEHOLDER} 占位)后重新运行。`,
+    `Initialized ${CONFIG_PATH}\nFill in relayUrl, token, and defaultName (replace the ${PLACEHOLDER} placeholders), then rerun.`,
     { code: 'config_initialized' },
   );
 }
@@ -73,18 +73,18 @@ function validate(cfg) {
   }
   if (missing.length) {
     throw new ConfigError(
-      `配置缺失或未替换占位符:${missing.join(', ')}\n请编辑 ${CONFIG_PATH} 或用同名 env 覆盖(NEXSCOPE_RELAY_URL / NEXSCOPE_TOKEN 等)。`,
+      `Missing config (or unreplaced placeholders): ${missing.join(', ')}\nEdit ${CONFIG_PATH} or override via env (NEXSCOPE_RELAY_URL / NEXSCOPE_TOKEN / etc.).`,
       { code: 'config_missing' },
     );
   }
   if (!/^wss?:\/\//.test(cfg.relayUrl)) {
-    throw new ConfigError(`relayUrl 必须以 ws:// 或 wss:// 开头,得到 "${cfg.relayUrl}"`, { code: 'bad_relay_url' });
+    throw new ConfigError(`relayUrl must start with ws:// or wss://, got "${cfg.relayUrl}"`, { code: 'bad_relay_url' });
   }
   if (cfg.mode && !['manual', 'auto'].includes(cfg.mode)) {
-    throw new ConfigError(`mode 必须是 manual 或 auto,得到 "${cfg.mode}"`, { code: 'bad_mode' });
+    throw new ConfigError(`mode must be manual or auto, got "${cfg.mode}"`, { code: 'bad_mode' });
   }
   if (cfg.hopLimit != null && (!Number.isInteger(cfg.hopLimit) || cfg.hopLimit < 1)) {
-    throw new ConfigError(`hopLimit 必须是正整数,得到 "${cfg.hopLimit}"`, { code: 'bad_hop_limit' });
+    throw new ConfigError(`hopLimit must be a positive integer, got "${cfg.hopLimit}"`, { code: 'bad_hop_limit' });
   }
 }
 

@@ -1,5 +1,5 @@
 ---
-description: 向某 thread 追加一段 role=user 的消息(由本人亲自说,非 Claude 代发)。
+description: Append a role=user message to an existing thread (spoken by the human, not Claude).
 argument-hint: <threadId> <text>
 allowed-tools: [Bash]
 ---

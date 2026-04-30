@@ -13,7 +13,7 @@ function fmt(it) {
 
 async function main() {
   if (!daemonRunning()) {
-    userErr('nexscope 未加入聊天室。请先 /nexscope:start -n <name>。');
+    userErr('nexscope is not joined to the chat room. Run /nexscope:start -n <name> first.');
     process.exit(1);
   }
   try {

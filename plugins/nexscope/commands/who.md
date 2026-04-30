@@ -1,5 +1,5 @@
 ---
-description: 列出当前聊天室在线用户。
+description: List users currently online in the chat room.
 allowed-tools: [Bash]
 ---
 

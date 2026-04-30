@@ -1,55 +1,55 @@
 # nexscope — H2A2A2H Chat-Room Plugin for Claude Code
 
-让多个 Claude Code 实例通过 WebSocket relay 共享一个聊天室,互相 @mention、广播、传文件,支持 manual(默认)与 auto 两种回应模式。
+Lets multiple Claude Code instances share a single chat room over a WebSocket relay — @mention, broadcast, transfer files. Supports two reply modes: **manual** (default) and **auto**.
 
-需求/协议对照:见 [PRD.md](PRD.md) (v0.4) 与 [PROTOCOL.md](PROTOCOL.md) (v1)。
+Spec & protocol references: [PRD.md](PRD.md) (v0.4) and [PROTOCOL.md](PROTOCOL.md) (v1).
 
-## 快速安装
+## Quick Install
 
-### 1. 克隆仓库 + 装依赖(一行命令)
+### 1. Clone + install deps (one-liner)
 
 ```bash
 git clone https://github.com/hhw19970223/claude-plugin-hhw.git ~/claude-plugin-hhw \
   && (cd ~/claude-plugin-hhw && npm install)
 ```
 
-> SSH:`git clone git@github.com:hhw19970223/claude-plugin-hhw.git ~/claude-plugin-hhw && (cd ~/claude-plugin-hhw && npm install)`
-> 或 `gh repo clone hhw19970223/claude-plugin-hhw ~/claude-plugin-hhw && (cd ~/claude-plugin-hhw && npm install)`
+> SSH: `git clone git@github.com:hhw19970223/claude-plugin-hhw.git ~/claude-plugin-hhw && (cd ~/claude-plugin-hhw && npm install)`
+> Or: `gh repo clone hhw19970223/claude-plugin-hhw ~/claude-plugin-hhw && (cd ~/claude-plugin-hhw && npm install)`
 
-### 2. 在 Claude Code 里挂载
+### 2. Register the plugin inside Claude Code
 
-打开 Claude Code,依次输入:
+Open Claude Code and run:
 
 ```
 /plugin marketplace add ~/claude-plugin-hhw
 /plugin install nexscope
 ```
 
-输入 `/` 查看命令补全,应该能看到 `/nexscope:start` / `/nexscope:say` / `/nexscope:inbox` 等。
+Type `/` and you should see `/nexscope:start` / `/nexscope:say` / `/nexscope:inbox` etc.
 
-### 3. 起一台 relay(所有成员共用一台)
+### 3. Stand up a relay (shared by every member)
 
-relay 的实现不在这个仓库里,请参考 [PROTOCOL.md](PROTOCOL.md) 自己部署,或本地调试用:
+The relay is **not** shipped in this repo — deploy your own per [PROTOCOL.md](PROTOCOL.md), or for local dev:
 
 ```bash
-# 最小 relay(Node 18+,依赖 ws):
-#   - NEXSCOPE_TOKEN 必须设置,是所有客户端的共享认证 token
-#   - 生产建议 wss:// + 反向代理
-NEXSCOPE_TOKEN=<你定的强 token> PORT=8080 node path/to/relay.js
+# Minimal relay (Node 18+, depends on `ws`):
+#   - NEXSCOPE_TOKEN is required — shared auth token for all clients
+#   - For production use wss:// behind a TLS-terminating reverse proxy
+NEXSCOPE_TOKEN=<your strong token> PORT=8080 node path/to/relay.js
 ```
 
-### 4. 首次 `/nexscope:start`
+### 4. First `/nexscope:start`
 
 ```
 /nexscope:start -n alice
 ```
 
-**首次运行**会把 `config.example.json` 复制到 `~/.claude/plugin-data/nexscope/config.json`(chmod 0600),并提示你填写:
+**On first run** the plugin copies `config.example.json` to `~/.claude/plugin-data/nexscope/config.json` (chmod 0600) and asks you to fill in:
 
 ```json
 {
   "relayUrl": "wss://your-relay-host/ws",
-  "token": "与 relay 端 NEXSCOPE_TOKEN 一致",
+  "token": "match the relay's NEXSCOPE_TOKEN",
   "defaultName": "alice",
   "mode": "manual",
   "hopLimit": 3,
@@ -57,46 +57,46 @@ NEXSCOPE_TOKEN=<你定的强 token> PORT=8080 node path/to/relay.js
 }
 ```
 
-填好后再 `/nexscope:start -n alice`。出现 `joined as alice (mode=manual), online: [alice]` 即接入成功。
+Save and rerun `/nexscope:start -n alice`. When you see `joined as alice (mode=manual), online: [alice]` you're in.
 
-### 5. 升级
+### 5. Upgrade
 
 ```bash
 cd ~/claude-plugin-hhw && git pull && npm install
 ```
 
-配置文件在 `~/.claude/plugin-data/nexscope/` 下(独立于插件代码),`git pull` 不会覆盖你的 token/name。
+Your config lives in `~/.claude/plugin-data/nexscope/` (separate from the plugin code), so `git pull` never overwrites your token/name.
 
-## 命令总表
+## Command Reference
 
-| 命令 | 用法 | 说明 |
+| Command | Usage | Description |
 |---|---|---|
-| `/nexscope:start` | `-n <name> [--mode=manual\|auto]` | 加入聊天室;名字 relay 端唯一 |
-| `/nexscope:stop` | — | 离开聊天室 |
-| `/nexscope:say` | `[@u1 @u2] [--role=user\|userAgent] [--thread=<id>] [--file=<path>] <text>` | 发消息/文件;行首 `@` 解析为 mention;无 @ 为广播 |
-| `/nexscope:who` | — | 当前在线用户 |
-| `/nexscope:inbox` | — | manual 模式收到的 @mention 待审批队列 |
-| `/nexscope:accept` | `<threadId> [extra]` | 批准某 thread:打印消息给 Claude 执行 |
-| `/nexscope:reject` | `<threadId> [reason]` | 拒绝并回发 role=user 拒绝消息 |
-| `/nexscope:append` | `<threadId> <text>` | 以本人 role=user 向已有 thread 追加一句 |
-| `/nexscope:mode` | `[manual\|auto]` | 切换回应模式;不带参则查询当前 |
-| `/nexscope:history` | `[--limit=N]` | 本地历史(默认 50 条) |
-| `/nexscope:update` | — | 拉新版代码(git pull + npm install),自动关停 daemon |
+| `/nexscope:start` | `-n <name> [--mode=manual\|auto]` | Join the chat room; the name must be unique relay-side |
+| `/nexscope:stop` | — | Leave the chat room |
+| `/nexscope:say` | `[@u1 @u2] [--role=user\|userAgent] [--thread=<id>] [--file=<path>] <text>` | Send a message/file; leading `@` = mention, no `@` = broadcast |
+| `/nexscope:who` | — | List currently online users |
+| `/nexscope:inbox` | — | Show the queue of @mentions awaiting approval (manual mode) |
+| `/nexscope:accept` | `<threadId> [extra]` | Approve a thread: print its messages for Claude to execute |
+| `/nexscope:reject` | `<threadId> [reason]` | Reject the thread and send back a role=user refusal |
+| `/nexscope:append` | `<threadId> <text>` | Append a role=user message (spoken by the human) to an existing thread |
+| `/nexscope:mode` | `[manual\|auto]` | Switch reply mode; no arg = show current |
+| `/nexscope:history` | `[--limit=N]` | Show local history (defaults to last 50) |
+| `/nexscope:update` | — | Pull the latest code (git pull + npm install); stops the daemon first |
 
-## 回应模式
+## Reply Modes
 
-- **manual**(默认):被 @ 的消息进 `inbox.jsonl`,等你 `/nexscope:accept` 或 `/nexscope:reject` 处理。广播消息只注入为上下文、不进 inbox。
-- **auto**:Claude 对点名消息自主回应。实现方式 = 每次 Claude 停止响应时,`Stop` hook 检查 `pending_auto_tasks.jsonl`:
-  - 有未处理点名 → 返回 `{"decision":"block","reason":"..."}` 让 Claude 继续本轮,提示它用 `/nexscope:say` 回复
-  - 本端同 thread 连续 auto-reply ≥ `hopLimit`(默认 3)→ 该 thread 后续点名降级到 inbox,Stop 不再 block
-  - 5 分钟内未被处理的任务视为"Claude 决定不回",自动放行
+- **manual** (default): @mentions land in `inbox.jsonl` and wait for your `/nexscope:accept` or `/nexscope:reject`. Broadcast messages are injected as context but never queued in the inbox.
+- **auto**: Claude replies to @mentions on its own. Mechanism: each time Claude stops generating, the `Stop` hook checks `pending_auto_tasks.jsonl`:
+  - Outstanding mention → returns `{"decision":"block","reason":"..."}` to keep Claude in the same turn, nudging it to reply via `/nexscope:say`.
+  - If the local thread's consecutive auto-reply count ≥ `hopLimit` (default 3), further mentions on that thread fall through to the inbox and `Stop` no longer blocks.
+  - Tasks older than 5 minutes are auto-downgraded (assumed "Claude decided not to reply") and the hook unblocks.
 
-广播(无 @)消息在任何模式下都只注入为上下文,不主动回应。
+Broadcast (no @) messages are **never** auto-replied to, regardless of mode.
 
-## 架构
+## Architecture
 
 ```
- Claude Code session                               relay.nexscope-relay
+ Claude Code session                           relay.nexscope-relay
         │                                               ▲
         │ /nexscope:start ──spawn detached──▶ nexscope daemon ────┘ WebSocket
         │                                    │
@@ -107,91 +107,91 @@ cd ~/claude-plugin-hhw && git pull && npm install
         │                                    ▼
         │                      ~/.claude/plugin-data/nexscope/
         │                        pending_notifications.jsonl ◀── UserPromptSubmit hook
-        │                        pending_auto_tasks.jsonl    ◀── Stop hook(auto 模式 block)
+        │                        pending_auto_tasks.jsonl    ◀── Stop hook (blocks when auto mode)
         │                        inbox.jsonl  history.jsonl  presence.json  files/
 ```
 
-- 所有状态落在 `~/.claude/plugin-data/nexscope/`(与插件代码目录解耦,升级/重装不丢数据)
-- daemon 是**每用户唯一**的长驻进程,守 WebSocket + 监听 unix IPC
-- 每次用户 prompt 提交前,hook 把 daemon 写入的事件注入到 Claude 的上下文,形成"收消息 → Claude 看见 → 决定是否回"的闭环
+- All state lives in `~/.claude/plugin-data/nexscope/` (decoupled from plugin code — upgrades and reinstalls don't touch your data).
+- The daemon is a **single long-running process per user**: holds the WebSocket and listens on a unix socket for IPC.
+- Before every user prompt, the hook injects events the daemon has recorded into Claude's context — closing the loop "message received → Claude sees it → Claude decides whether to reply."
 
-## 环境变量(可选覆盖 config.json)
+## Environment Variables (override config.json)
 
-| Env | 覆盖 | 示例 |
+| Env | Overrides | Example |
 |---|---|---|
 | `NEXSCOPE_RELAY_URL` | relayUrl | `ws://localhost:8080/ws` |
 | `NEXSCOPE_TOKEN` | token | `dev` |
 | `NEXSCOPE_DEFAULT_NAME` | defaultName | `alice` |
 | `NEXSCOPE_MODE` | mode | `auto` |
 | `NEXSCOPE_HOP_LIMIT` | hopLimit | `5` |
-| `NEXSCOPE_MAX_PAYLOAD` | 单帧上限 bytes | `10485760` |
-| `NEXSCOPE_MAX_FILE` | 单文件上限 bytes | `104857600` |
+| `NEXSCOPE_MAX_PAYLOAD` | single-frame cap (bytes) | `10485760` |
+| `NEXSCOPE_MAX_FILE` | single-file cap (bytes) | `104857600` |
 
-## 排障
+## Troubleshooting
 
-- **连不上 relay**:查看 `~/.claude/plugin-data/nexscope/daemon.log`。常见 1008 = token 不对、4009 = name 被占、4012 = name 不合法。
-- **消息没注入到 Claude 上下文**:确认插件已 enable(在 Claude Code 里 `/plugin list` 看 `nexscope` 是否启用);查看 `~/.claude/plugin-data/nexscope/pending_notifications.jsonl` 是否有新行。
-- **auto 模式下 Claude 没自动回**:`Stop` hook 需要 Claude Code 支持 `decision:"block"` 语义;查看 `pending_auto_tasks.jsonl` 是否累积,若累积 > 5 min 会被降级到 inbox。
-- **文件传不过去**:查看 daemon.log,若是 `transfer_busy` 说明同房间有其他文件流在进行(v1 全局互斥);>100MB 会被拒绝(`NEXSCOPE_MAX_FILE`)。
+- **Can't connect to relay**: check `~/.claude/plugin-data/nexscope/daemon.log`. Common codes: 1008 = bad token, 4009 = name taken, 4012 = invalid name.
+- **Messages not injected into Claude's context**: confirm the plugin is enabled (`/plugin list` shows `nexscope`); check whether `~/.claude/plugin-data/nexscope/pending_notifications.jsonl` has fresh rows.
+- **Auto mode doesn't reply automatically**: the `Stop` hook needs Claude Code to honor `decision:"block"`. Inspect `pending_auto_tasks.jsonl`; tasks older than 5 minutes are downgraded to inbox.
+- **File transfer fails**: check daemon.log — `transfer_busy` means another file stream is in flight in the room (v1 global mutex); files larger than `NEXSCOPE_MAX_FILE` (100 MB) are rejected.
 
-## 本地端到端联调
+## Local End-to-End Dev
 
-单机 relay(自行部署,协议见 [PROTOCOL.md](PROTOCOL.md))+ 两个 Claude Code 实例,或 relay + 一个真人 + 一个 raw WS 脚本。
+Single-box relay (your own implementation) + two Claude Code instances, or relay + one real user + a raw WS test script.
 
 ```bash
-# 终端 A:本地 relay(自己的实现)
+# Terminal A: local relay (your own)
 NEXSCOPE_TOKEN=dev PORT=8080 node your-relay.js
 
-# 终端 B:Claude Code session 1
+# Terminal B: Claude Code session 1
 NEXSCOPE_RELAY_URL=ws://localhost:8080/ws NEXSCOPE_TOKEN=dev claude
-# 在 Claude 里:
+# Inside Claude:
 /nexscope:start -n alice
-/nexscope:say @bob 你好
+/nexscope:say @bob hello
 
-# 终端 C:Claude Code session 2
+# Terminal C: Claude Code session 2
 NEXSCOPE_RELAY_URL=ws://localhost:8080/ws NEXSCOPE_TOKEN=dev claude
 /nexscope:start -n bob
-/nexscope:inbox              # 看到 alice 的 @
-/nexscope:accept <tid>       # Claude 执行任务
+/nexscope:inbox              # see alice's @
+/nexscope:accept <tid>       # Claude executes the request
 ```
 
-## 目录结构
+## Directory Layout
 
 ```
-claude-plugin-hhw/                        # git 仓库 / marketplace 根
-├── .claude-plugin/marketplace.json       # marketplace 清单(列出 nexscope 插件)
-├── plugins/nexscope/                          # nexscope 插件根(CLAUDE_PLUGIN_ROOT)
-│   ├── .claude-plugin/plugin.json        # 插件清单
-│   ├── commands/*.md                     # 11 个 slash 命令
+claude-plugin-hhw/                        # git repo / marketplace root
+├── .claude-plugin/marketplace.json       # marketplace manifest (lists the nexscope plugin)
+├── plugins/nexscope/                     # nexscope plugin root (CLAUDE_PLUGIN_ROOT)
+│   ├── .claude-plugin/plugin.json        # plugin manifest
+│   ├── commands/*.md                     # 11 slash commands
 │   ├── hooks/hooks.json                  # UserPromptSubmit + Stop
-│   ├── scripts/                          # node 实现
-│   │   ├── config.js state.js log.js         # 基础设施
+│   ├── scripts/                          # node implementation
+│   │   ├── config.js state.js log.js         # infrastructure
 │   │   ├── ipc-client.js ipc-server.js       # IPC over unix socket
-│   │   ├── ws-client.js                      # relay WebSocket 封装 + 重连
-│   │   ├── daemon.js                         # 长驻主进程
-│   │   ├── start.js stop.js update.js        # 生命周期
-│   │   ├── say.js who.js mode.js history.js  # 核心命令
-│   │   ├── inbox.js accept.js reject.js      # inbox 流
+│   │   ├── ws-client.js                      # relay WebSocket wrapper + reconnect
+│   │   ├── daemon.js                         # long-running main process
+│   │   ├── start.js stop.js update.js        # lifecycle
+│   │   ├── say.js who.js mode.js history.js  # core commands
+│   │   ├── inbox.js accept.js reject.js      # inbox flow
 │   │   ├── append.js
 │   │   ├── hook-pre-prompt.js                # UserPromptSubmit hook
-│   │   └── hook-stop.js                      # Stop hook(auto 模式 block)
-│   ├── config.example.json               # 占位符模板
-│   └── package.json                      # 依赖 ws@^8
-├── PRD.md PROTOCOL.md                    # 规范
-└── README.md                             # 本文
+│   │   └── hook-stop.js                      # Stop hook (blocks during auto mode)
+│   ├── config.example.json               # placeholder template
+│   └── package.json                      # depends on ws@^8
+├── PRD.md PROTOCOL.md                    # spec docs
+└── README.md                             # this file
 ```
 
-> 仓库根同时是一个**单插件 marketplace**:`.claude-plugin/marketplace.json` 里 `source: "./plugins/nexscope"` 告诉 Claude Code 插件本体在子目录。这种分层是官方 marketplace 的标准结构,不要把 plugin.json 直接放仓库根(Claude Code 不认)。
+> The repo root is also a **single-plugin marketplace**: `.claude-plugin/marketplace.json` has `source: "./plugins/nexscope"` telling Claude Code the actual plugin lives in the subdirectory. This nested layout is the standard structure for official marketplaces — do not put `plugin.json` at the repo root (Claude Code won't recognize it).
 
-> relay 服务端实现不随插件分发;请按 [PROTOCOL.md](PROTOCOL.md) 自行实现或单独下载。
+> The relay server is not distributed with this plugin — implement one against [PROTOCOL.md](PROTOCOL.md) or clone it separately.
 
-## 安全提示
+## Security Notes
 
-- `config.json` 为 `0600`(仅 owner 读写),daemon.sock 同样;数据目录 `0700`
-- 共享 token 是 v1 唯一认证机制,持 token 者可占用任意未用 username + 伪造 role;**生产务必 wss + 非平凡 token**
-- Role label 显式呈现给 Claude(`[userAgent1 alice]` 等),配合 manual 默认模式缓解 prompt injection
-- v2 规划:per-user token、role 签名、E2E、多房间
+- `config.json` is `0600` (owner read/write only); the data dir is `0700`; daemon.sock is `0600`.
+- The shared token is v1's only auth mechanism — anyone holding it can squat on any free username and spoof the role field. **Use wss:// plus a non-trivial token in production.**
+- The role label is surfaced to Claude (e.g. `[userAgent1 alice]`), which combined with the default manual mode helps mitigate prompt-injection risks.
+- v2 roadmap: per-user tokens, signed roles, end-to-end encryption, multiple rooms.
 
-## 验收走查
+## Acceptance Walkthrough
 
-见 [PRD.md §9](PRD.md) AC-1 ~ AC-15。本实现已手工验证全部通过(B8 节点)。
+See [PRD.md §9](PRD.md), AC-1 through AC-15. This implementation has been manually verified against every item (see commit history milestone B8).

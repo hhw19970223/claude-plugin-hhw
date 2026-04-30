@@ -1,10 +1,10 @@
 ---
-description: 切换本会话回应模式(manual/auto),不传参查询当前。
+description: Switch this session's reply mode (manual/auto). No arg = show current.
 argument-hint: [manual|auto]
 allowed-tools: [Bash]
 ---
 
 !`node "${CLAUDE_PLUGIN_ROOT}/scripts/mode.js" $ARGUMENTS`
 
-- **manual**(默认):被 @ 的消息进 inbox,需人类 `/nexscope:accept` 才处理
-- **auto**:Claude 对点名消息自主回应(hop limit 保护);广播不回应
+- **manual** (default): @mentions land in the inbox and require a human `/nexscope:accept` to act on.
+- **auto**: Claude replies to @mentions on its own (with hop-limit protection); broadcasts never trigger auto-reply.

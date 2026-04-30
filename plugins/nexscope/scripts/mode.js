@@ -3,7 +3,7 @@ import { userErr, userOut } from './log.js';
 
 async function main() {
   if (!daemonRunning()) {
-    userErr('nexscope 未加入聊天室。请先 /nexscope:start -n <name>。');
+    userErr('nexscope is not joined to the chat room. Run /nexscope:start -n <name> first.');
     process.exit(1);
   }
   const mode = process.argv[2];
@@ -14,12 +14,12 @@ async function main() {
     return;
   }
   if (!['manual', 'auto'].includes(mode)) {
-    userErr(`用法: /nexscope:mode manual|auto (不带参数查询当前)`);
+    userErr(`Usage: /nexscope:mode manual|auto (no args = show current)`);
     process.exit(1);
   }
   try {
     const { mode: m } = await callDaemon('mode', { mode });
-    userOut(`mode 已切到 ${m}`);
+    userOut(`mode switched to ${m}`);
   } catch (e) {
     if (e instanceof IpcError) userErr(`[${e.code}] ${e.message}`);
     else userErr(e.message);

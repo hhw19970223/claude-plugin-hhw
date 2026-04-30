@@ -50,21 +50,21 @@ async function main() {
   }
 
   const name = args.name || cfg.defaultName;
-  if (!name) { userErr('请用 -n <name> 指定用户名,或在 config.json 填 defaultName。'); process.exit(1); }
+  if (!name) { userErr('Pass -n <name> to specify the username, or set defaultName in config.json.'); process.exit(1); }
   if (!/^[a-zA-Z0-9_-]{1,32}$/.test(name)) {
-    userErr(`用户名 "${name}" 不合法,必须匹配 ^[a-zA-Z0-9_-]{1,32}$`);
+    userErr(`Username "${name}" is invalid; must match ^[a-zA-Z0-9_-]{1,32}$`);
     process.exit(1);
   }
   const mode = args.mode || cfg.mode;
   if (mode && !['manual', 'auto'].includes(mode)) {
-    userErr(`--mode 必须是 manual 或 auto,得到 "${mode}"`);
+    userErr(`--mode must be manual or auto, got "${mode}"`);
     process.exit(1);
   }
 
   // Already running?
   const existing = readJsonOrNull(SESSION_PATH);
   if (existing && pidAlive(existing.pid)) {
-    userErr(`nexscope 已在运行:name=${existing.name}, pid=${existing.pid}, mode=${existing.mode}。先 /nexscope:stop 再重新启动。`);
+    userErr(`nexscope is already running: name=${existing.name}, pid=${existing.pid}, mode=${existing.mode}. Run /nexscope:stop before starting again.`);
     process.exit(1);
   }
   if (existing) {
@@ -97,12 +97,12 @@ async function main() {
   });
 
   if (!ok) {
-    userErr(`daemon 启动超时(6s),请查看 ${DAEMON_LOG} 排障。`);
+    userErr(`daemon start timed out (6s); check ${DAEMON_LOG} for details.`);
     try { process.kill(child.pid, 'SIGTERM'); } catch {}
     process.exit(1);
   }
   if (ok.kind === 'err') {
-    userErr(`加入聊天室失败 (${ok.error.code}): ${ok.error.message}`);
+    userErr(`failed to join chat room (${ok.error.code}): ${ok.error.message}`);
     try { fs.unlinkSync(SESSION_ERROR); } catch {}
     process.exit(1);
   }

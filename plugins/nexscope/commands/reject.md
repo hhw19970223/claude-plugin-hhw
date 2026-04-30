@@ -1,5 +1,5 @@
 ---
-description: 拒绝 inbox 里某 threadId 的请求,并向原发送方回发一条 role=user 的拒绝消息。
+description: Reject the request on a thread and reply to the sender with a role=user refusal message.
 argument-hint: <threadId> [reason]
 allowed-tools: [Bash]
 ---

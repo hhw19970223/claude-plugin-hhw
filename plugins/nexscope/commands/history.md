@@ -1,5 +1,5 @@
 ---
-description: 显示本地历史消息(默认最近 50 条)。
+description: Show local message history (defaults to the most recent 50 entries).
 argument-hint: [--limit=N]
 allowed-tools: [Bash]
 ---

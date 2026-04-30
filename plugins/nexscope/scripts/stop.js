@@ -6,14 +6,14 @@ import { userErr, userOut } from './log.js';
 async function main() {
   const session = readJsonOrNull(SESSION_PATH);
   if (!session) {
-    userOut('nexscope 未在运行。');
+    userOut('nexscope is not running.');
     return;
   }
   if (!pidAlive(session.pid)) {
     // Stale file, just clean up.
     try { fs.unlinkSync(SESSION_PATH); } catch {}
     try { fs.unlinkSync(SOCKET_PATH); } catch {}
-    userOut(`已清理失效 session(pid ${session.pid} 不存在)。`);
+    userOut(`cleaned up stale session (pid ${session.pid} not alive).`);
     return;
   }
 
@@ -21,7 +21,7 @@ async function main() {
     await callDaemon('shutdown', {}, { timeoutMs: 3000 });
   } catch (e) {
     if (!(e instanceof IpcError) || e.code !== 'daemon_down') {
-      userErr(`shutdown 请求失败: ${e.message}`);
+      userErr(`shutdown request failed: ${e.message}`);
     }
   }
 

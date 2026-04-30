@@ -23,16 +23,16 @@ function parseSayArgs(argv) {
 
 async function main() {
   if (!daemonRunning()) {
-    userErr('nexscope 未加入聊天室。请先 /nexscope:start -n <name>。');
+    userErr('nexscope is not joined to the chat room. Run /nexscope:start -n <name> first.');
     process.exit(1);
   }
   const { mentions, role, threadId, filePath, text } = parseSayArgs(process.argv.slice(2));
   if (!text && !filePath) {
-    userErr('用法: /nexscope:say [@u1 @u2 ...] [--role=user|userAgent] [--thread=<id>] [--file=<path>] <text>');
+    userErr('Usage: /nexscope:say [@u1 @u2 ...] [--role=user|userAgent] [--thread=<id>] [--file=<path>] <text>');
     process.exit(1);
   }
   if (role && !['user', 'userAgent'].includes(role)) {
-    userErr(`--role 必须是 user 或 userAgent,得到 "${role}"`);
+    userErr(`--role must be user or userAgent, got "${role}"`);
     process.exit(1);
   }
 

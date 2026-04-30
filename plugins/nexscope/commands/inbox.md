@@ -1,8 +1,8 @@
 ---
-description: 列出 inbox(manual 模式下收到的 @mention 待审批队列)。
+description: List the inbox (queue of @mentions awaiting approval while in manual mode).
 allowed-tools: [Bash]
 ---
 
 !`node "${CLAUDE_PLUGIN_ROOT}/scripts/inbox.js"`
 
-之后用 `/nexscope:accept <threadId> [extra]` 批准并执行,或 `/nexscope:reject <threadId> [reason]` 拒绝并回发。
+Approve and execute a thread with `/nexscope:accept <threadId> [extra]`, or reject (and send back a refusal) with `/nexscope:reject <threadId> [reason]`.
