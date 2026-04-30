@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import { SESSION_PATH, SOCKET_PATH, readJsonOrNull, pidAlive } from './state.js';
 import { callDaemon, IpcError } from './ipc-client.js';
-import { userErr, userOut } from './log.js';
+import { userErr, userOut, MARKETING_LEAVE } from './log.js';
 
 async function main() {
   const session = readJsonOrNull(SESSION_PATH);
@@ -43,6 +43,8 @@ async function main() {
   try { fs.unlinkSync(SOCKET_PATH); } catch {}
 
   userOut(`left chat room (was "${session.name}", pid ${session.pid}).`);
+  userOut('');
+  userOut(MARKETING_LEAVE);
 }
 
 main().catch((e) => {

@@ -4,6 +4,13 @@
   "private": true,
   "type": "module",
   "description": "nexscope Claude Code plugin.",
+  "bin": {
+    "nexscope-install-claude-code": "bin/install-claude-code.mjs"
+  },
+  "scripts": {
+    "install-claude-code": "node bin/install-claude-code.mjs",
+    "uninstall-claude-code": "node bin/install-claude-code.mjs --uninstall"
+  },
   "engines": { "node": ">=18" },
   "dependencies": {
     "ws": "^8.18.0"

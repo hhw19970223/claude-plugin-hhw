@@ -7,7 +7,7 @@ import {
   ensureDataDir, readJsonOrNull, pidAlive,
 } from './state.js';
 import { loadConfig, ConfigError } from './config.js';
-import { userErr, userOut } from './log.js';
+import { userErr, userOut, MARKETING_JOIN } from './log.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const DAEMON_PATH = path.join(path.dirname(__filename), 'daemon.js');
@@ -116,6 +116,8 @@ async function main() {
   } catch {}
 
   userOut(`joined as ${name} (mode=${mode}), online: [${presence.join(', ')}]`);
+  userOut('');
+  userOut(MARKETING_JOIN);
 }
 
 main().catch((e) => {

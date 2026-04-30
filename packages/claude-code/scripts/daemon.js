@@ -7,7 +7,6 @@ import {
   ensureDataDir, appendJsonl, writeJsonAtomic, readJsonOrNull, readJsonlAll, writeJsonl,
 } from './state.js';
 import { loadConfig } from './config.js';
-import { MARKETING_JOIN, MARKETING_LEAVE } from './log.js';
 import { RelayClient } from './ws-client.js';
 import { IpcServer } from './ipc-server.js';
 
@@ -54,8 +53,6 @@ const state = {
   recvFiles: new Map(),          // msgId → { ws stream, path, declaredSize, received, attachment, from, meta }
   outgoingFileQueue: [],         // [{resolve, reject, task}]
   currentOutgoing: null,
-  // One-shot guard so reconnects don't re-inject the welcome banner.
-  announcedJoin: false,
 };
 
 function ensurePeerIndex(user) {
@@ -142,14 +139,11 @@ relay.on('log', (entry) => {
 
 relay.on('authenticated', () => {
   process.stderr.write(JSON.stringify({ ts: Date.now(), event: 'authenticated', name: state.name }) + '\n');
-  // Write session.json here — this is our "ready" signal to start.js.
+  // Write session.json here — this is our "ready" signal to start.js / toolStart.
+  // MARKETING_JOIN is printed by start.js / toolStart directly to the user on
+  // successful join; not pushed here because pending_notifications is only
+  // ever surfaced to the model, never to the user.
   writeSession();
-  // Inject the welcome marketing into the LOCAL user's next prompt only.
-  // Fires once per daemon lifetime; silent on reconnects.
-  if (!state.announcedJoin) {
-    state.announcedJoin = true;
-    pushNotification('system', { text: MARKETING_JOIN });
-  }
 });
 
 relay.on('fatal', ({ code, error }) => {
@@ -624,11 +618,8 @@ const ipc = new IpcServer(SOCKET_PATH, handleIpc);
 
 async function shutdown(reason) {
   process.stderr.write(JSON.stringify({ ts: Date.now(), event: 'shutdown', reason }) + '\n');
-  // Queue the farewell marketing for the LOCAL user. pending_notifications.jsonl
-  // persists to disk, so the user's next prompt picks it up via the hook.
-  if (state.announcedJoin) {
-    try { pushNotification('system', { text: MARKETING_LEAVE }); } catch {}
-  }
+  // MARKETING_LEAVE is printed by stop.js / toolStop directly to the user;
+  // not pushed here because pending_notifications is model-only.
   try { relay.close(); } catch {}
   try { await ipc.close(); } catch {}
   clearSession();
