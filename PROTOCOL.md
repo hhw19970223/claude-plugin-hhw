@@ -1,7 +1,7 @@
 # HHW Relay Protocol (v1)
 
 > 状态:draft,对应 PRD v0.4
-> 作用范围:`hhw-relay` 中继服务 ↔ `hhw` 插件客户端的 wire-level 契约
+> 作用范围:`nexscope-relay` 中继服务 ↔ `nexscope` 插件客户端的 wire-level 契约
 > 任何对本文档的修改必须同步 bump `SUPPORTED_PROTOCOL_VERSION`(见 §1.3)
 
 ---
@@ -256,7 +256,7 @@ Client                                    Relay                          Peer(s)
 
 v1 推荐接收端客户端行为:
 
-1. 收到 `file-start` → 在本地 `~/.claude/plugin-data/hhw/files/<msgId>-<name>.part` 打开写入流
+1. 收到 `file-start` → 在本地 `~/.claude/plugin-data/nexscope/files/<msgId>-<name>.part` 打开写入流
 2. 逐 binary chunk 追加
 3. 收到 `file-end` → rename `.part` → 正式文件名;若 `sha256` 存在则校验
 4. 打印通知行 `[<roleLabel> <from> → <target>] (file) <name> saved to <path>`(见 PRD FR-4)

@@ -1,0 +1,9 @@
+{
+  "name": "nexscope",
+  "description": "H2A2A2H 多-Claude 协作聊天室:通过 relay 让多个 Claude Code 实例在一个房间里互发消息、@mention、传文件,支持 manual/auto 两种回应模式。",
+  "version": "0.1.0",
+  "author": {
+    "name": "nexscope"
+  },
+  "keywords": ["chat", "multi-agent", "collaboration", "websocket"]
+}

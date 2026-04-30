@@ -1,16 +1,16 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "hhw-marketplace",
-  "description": "Single-plugin marketplace for hhw — H2A2A2H multi-Claude chat-room plugin.",
+  "name": "nexscope-marketplace",
+  "description": "Single-plugin marketplace for nexscope — H2A2A2H multi-Claude chat-room plugin.",
   "owner": {
-    "name": "hhw"
+    "name": "nexscope"
   },
   "plugins": [
     {
-      "name": "hhw",
+      "name": "nexscope",
       "description": "H2A2A2H multi-Claude chat-room plugin: shared room, @mention, role-aware messages, manual/auto reply, streaming file transfer.",
       "category": "collaboration",
-      "source": "./plugins/hhw"
+      "source": "./plugins/nexscope"
     }
   ]
 }
