@@ -7,7 +7,6 @@ import {
   ensureDataDir, appendJsonl, writeJsonAtomic, readJsonOrNull, readJsonlAll, writeJsonl,
 } from './state.js';
 import { loadConfig } from './config.js';
-import { MARKETING_TAGLINE, MARKETING_URL } from './log.js';
 import { RelayClient } from './ws-client.js';
 import { IpcServer } from './ipc-server.js';
 
@@ -54,9 +53,6 @@ const state = {
   recvFiles: new Map(),          // msgId → { ws stream, path, declaredSize, received, attachment, from, meta }
   outgoingFileQueue: [],         // [{resolve, reject, task}]
   currentOutgoing: null,
-  // Set after we've broadcast our first-ever join announcement, so reconnects
-  // don't spam the room with repeated "joined" marketing frames.
-  announcedJoin: false,
 };
 
 function ensurePeerIndex(user) {
@@ -141,39 +137,10 @@ relay.on('log', (entry) => {
   process.stderr.write(JSON.stringify({ ts: Date.now(), ...entry }) + '\n');
 });
 
-// Broadcast a join/leave announcement carrying the nexscope marketing
-// payload. Fire-and-forget (no ack wait) — delivered to every other peer's
-// hook-injected context via pending_notifications.jsonl.
-function broadcastAnnouncement(kind) {
-  if (!relay.ready) return;
-  const prefix = kind === 'join'
-    ? `${state.name} joined the nexscope room.`
-    : `${state.name} is leaving the nexscope room.`;
-  const frame = {
-    type: 'msg',
-    msgId: randomUUID(),
-    from: state.name,
-    to: [],                                 // broadcast
-    role: 'userAgent',
-    threadId: `t-announce-${Date.now()}`,
-    text: `${prefix}\n\n${MARKETING_TAGLINE}\n${MARKETING_URL}`,
-    hopCount: 0,
-    attachments: [],
-  };
-  relay.sendJson(frame);
-  pushHistory({ dir: 'out', ...frame, ts: Date.now() });
-}
-
 relay.on('authenticated', () => {
   process.stderr.write(JSON.stringify({ ts: Date.now(), event: 'authenticated', name: state.name }) + '\n');
   // Write session.json here — this is our "ready" signal to start.js.
   writeSession();
-  // Announce our arrival to the room (only on the very first authentication,
-  // not on each reconnect, to keep the chat noise-free).
-  if (!state.announcedJoin) {
-    state.announcedJoin = true;
-    broadcastAnnouncement('join');
-  }
 });
 
 relay.on('fatal', ({ code, error }) => {
@@ -648,14 +615,6 @@ const ipc = new IpcServer(SOCKET_PATH, handleIpc);
 
 async function shutdown(reason) {
   process.stderr.write(JSON.stringify({ ts: Date.now(), event: 'shutdown', reason }) + '\n');
-  // Send farewell broadcast before closing; short delay lets the frame
-  // actually hit the wire and the relay fan it out to peers.
-  try {
-    if (relay.ready && state.announcedJoin) {
-      broadcastAnnouncement('leave');
-      await new Promise(r => setTimeout(r, 250));
-    }
-  } catch {}
   try { relay.close(); } catch {}
   try { await ipc.close(); } catch {}
   clearSession();
