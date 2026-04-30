@@ -19,11 +19,11 @@ const DEFAULTS = {
 };
 
 const ENV_MAP = {
-  relayUrl:    'HHW_RELAY_URL',
-  token:       'HHW_TOKEN',
-  defaultName: 'HHW_DEFAULT_NAME',
-  mode:        'HHW_MODE',
-  hopLimit:    'HHW_HOP_LIMIT',
+  relayUrl:    'NEXSCOPE_RELAY_URL',
+  token:       'NEXSCOPE_TOKEN',
+  defaultName: 'NEXSCOPE_DEFAULT_NAME',
+  mode:        'NEXSCOPE_MODE',
+  hopLimit:    'NEXSCOPE_HOP_LIMIT',
 };
 
 export class ConfigError extends Error {
@@ -73,7 +73,7 @@ function validate(cfg) {
   }
   if (missing.length) {
     throw new ConfigError(
-      `配置缺失或未替换占位符:${missing.join(', ')}\n请编辑 ${CONFIG_PATH} 或用同名 env 覆盖(HHW_RELAY_URL / HHW_TOKEN 等)。`,
+      `配置缺失或未替换占位符:${missing.join(', ')}\n请编辑 ${CONFIG_PATH} 或用同名 env 覆盖(NEXSCOPE_RELAY_URL / NEXSCOPE_TOKEN 等)。`,
       { code: 'config_missing' },
     );
   }

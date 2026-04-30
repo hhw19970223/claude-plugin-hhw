@@ -43,7 +43,7 @@ async function main() {
   ).join('\n');
 
   const reason =
-`[HHW AUTO MODE] 你在聊天室收到以下未回复的点名消息(mode=auto,当前 user=${session.name}):
+`[NEXSCOPE AUTO MODE] 你在聊天室收到以下未回复的点名消息(mode=auto,当前 user=${session.name}):
 
 ${summary}
 

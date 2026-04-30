@@ -27,7 +27,7 @@ const config = loadConfig();
 const NAME = args.name || config.defaultName;
 const MODE = (args.mode && ['manual', 'auto'].includes(args.mode)) ? args.mode : config.mode;
 const HOP_LIMIT = args['hop-limit'] ? parseInt(args['hop-limit'], 10) : config.hopLimit;
-const MAX_FILE = parseInt(process.env.HHW_MAX_FILE || String(100 * 1024 * 1024), 10);
+const MAX_FILE = parseInt(process.env.NEXSCOPE_MAX_FILE || String(100 * 1024 * 1024), 10);
 
 if (!NAME || !/^[a-zA-Z0-9_-]{1,32}$/.test(NAME)) {
   writeSessionError({ code: 'invalid_name', message: `name "${NAME}" invalid (must match ^[a-zA-Z0-9_-]{1,32}$)` });
@@ -130,7 +130,7 @@ const relay = new RelayClient({
   relayUrl: config.relayUrl,
   token:    config.token,
   name:     state.name,
-  maxPayload: parseInt(process.env.HHW_MAX_PAYLOAD || String(10 * 1024 * 1024), 10),
+  maxPayload: parseInt(process.env.NEXSCOPE_MAX_PAYLOAD || String(10 * 1024 * 1024), 10),
 });
 
 relay.on('log', (entry) => {
@@ -559,7 +559,7 @@ async function doSendFile({ filePath, to, role, threadId, text, hopCount }) {
   const abs = path.resolve(filePath);
   const st = fs.statSync(abs);
   if (!st.isFile()) { const e = new Error(`not a file: ${abs}`); e.code = 'bad_args'; throw e; }
-  if (st.size > MAX_FILE) { const e = new Error(`file exceeds HHW_MAX_FILE (${MAX_FILE})`); e.code = 'too_large'; throw e; }
+  if (st.size > MAX_FILE) { const e = new Error(`file exceeds NEXSCOPE_MAX_FILE (${MAX_FILE})`); e.code = 'too_large'; throw e; }
 
   const msgId = randomUUID();
   const chunkSize = 64 * 1024;

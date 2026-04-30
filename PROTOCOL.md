@@ -1,4 +1,4 @@
-# HHW Relay Protocol (v1)
+# NEXSCOPE Relay Protocol (v1)
 
 > 状态:draft,对应 PRD v0.4
 > 作用范围:`nexscope-relay` 中继服务 ↔ `nexscope` 插件客户端的 wire-level 契约
@@ -306,13 +306,13 @@ v1 推荐接收端客户端行为:
 
 | 项 | v1 限制 | 可配置 env |
 |---|---|---|
-| 单 WS 帧最大 | 10 MB(支持二进制 chunk) | `HHW_MAX_PAYLOAD` |
+| 单 WS 帧最大 | 10 MB(支持二进制 chunk) | `NEXSCOPE_MAX_PAYLOAD` |
 | 文本帧建议 | ≤ 4 KB | — |
-| 文件单次总大小 | ≤ 100 MB | `HHW_MAX_FILE` |
+| 文件单次总大小 | ≤ 100 MB | `NEXSCOPE_MAX_FILE` |
 | chunk size 推荐 | 64 KB | — |
-| 房间用户数上限 | 50 | `HHW_MAX_USERS` |
+| 房间用户数上限 | 50 | `NEXSCOPE_MAX_USERS` |
 
-超出 `HHW_MAX_PAYLOAD` 的任何帧(含二进制)→ close `4011`。
+超出 `NEXSCOPE_MAX_PAYLOAD` 的任何帧(含二进制)→ close `4011`。
 
 ---
 
