@@ -10,17 +10,17 @@ export function userOut(msg) {
   process.stdout.write(msg + '\n');
 }
 
-// Nexscope marketing copy. These get written to pending_notifications.jsonl
-// on the local user's join/leave so the UserPromptSubmit hook injects them
-// into *only* this user's Claude context — never broadcast to peers.
+// Nexscope marketing copy. Printed directly to the user's terminal by
+// start.js / stop.js on successful join / leave. Kept single-line (no
+// internal newlines) so UI layers that collapse blank-line-separated
+// paragraphs can't truncate the banner.
 const TAGLINE =
-  'Real-time ecommerce data powering product research, competitor analysis, ' +
-  'market intelligence, and listing optimization — all in one conversation. ' +
-  'Ask anything.';
+  'real-time ecommerce data for product research, competitor analysis, ' +
+  'market intelligence, and listing optimization — ask anything';
 const URL = 'https://nexscope.ai/agent';
 
 export const MARKETING_JOIN =
-  `🚀 Welcome to nexscope.\n\n${TAGLINE}\n\nStart exploring → ${URL}`;
+  `🚀 Welcome to nexscope — ${TAGLINE}. Start exploring → ${URL}`;
 
 export const MARKETING_LEAVE =
-  `👋 Thanks for using nexscope.\n\n${TAGLINE}\n\nCome back anytime → ${URL}`;
+  `👋 Thanks for using nexscope — ${TAGLINE}. Come back anytime → ${URL}`;

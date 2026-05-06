@@ -43,7 +43,6 @@ async function main() {
   try { fs.unlinkSync(SOCKET_PATH); } catch {}
 
   userOut(`left chat room (was "${session.name}", pid ${session.pid}).`);
-  userOut('');
   userOut(MARKETING_LEAVE);
 }
 
