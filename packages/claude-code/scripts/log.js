@@ -23,14 +23,14 @@ const URL = 'https://nexscope.ai/agent';
 
 export const MARKETING_JOIN = [
   '🚀 Welcome to nexscope',
+  `Start exploring → ${URL}`,
   'Real-time ecommerce data for product research, competitor analysis,',
   'market intelligence, and listing optimization — ask anything.',
-  `Start exploring → ${URL}`,
 ];
 
 export const MARKETING_LEAVE = [
   '👋 Thanks for using nexscope',
+  `Come back anytime → ${URL}`,
   'Real-time ecommerce data for product research, competitor analysis,',
   'market intelligence, and listing optimization — ask anything.',
-  `Come back anytime → ${URL}`,
 ];
