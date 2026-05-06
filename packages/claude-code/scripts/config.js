@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  DATA_DIR, CONFIG_PATH, ensureDataDir, writeJsonAtomic, readJsonOrNull,
+  CONFIG_PATH, LEGACY_CONFIG_PATH, ensureConfigDir, writeJsonAtomic, readJsonOrNull,
 } from './state.js';
 import { userErr } from './log.js';
 
@@ -34,7 +34,7 @@ export class ConfigError extends Error {
 }
 
 function initConfigFile() {
-  ensureDataDir();
+  ensureConfigDir();
   if (!fs.existsSync(EXAMPLE_PATH)) {
     throw new ConfigError(`missing template: ${EXAMPLE_PATH}`, { code: 'missing_example' });
   }
@@ -43,8 +43,25 @@ function initConfigFile() {
   try { fs.chmodSync(CONFIG_PATH, 0o600); } catch {}
 }
 
+// One-shot auto-migrate: if the user has a config.json at the legacy
+// project-local path but no config at the new global path, copy it over.
+// Leaves the legacy file in place so the user can confirm before deleting.
+function migrateLegacyConfig() {
+  if (CONFIG_PATH === LEGACY_CONFIG_PATH) return;
+  if (fs.existsSync(CONFIG_PATH)) return;
+  if (!fs.existsSync(LEGACY_CONFIG_PATH)) return;
+  ensureConfigDir();
+  fs.copyFileSync(LEGACY_CONFIG_PATH, CONFIG_PATH);
+  try { fs.chmodSync(CONFIG_PATH, 0o600); } catch {}
+  process.stderr.write(
+    `[nexscope] migrated config: ${LEGACY_CONFIG_PATH} → ${CONFIG_PATH}\n` +
+    `[nexscope] (legacy file left in place; you may delete it)\n`
+  );
+}
+
 // Load raw JSON; if missing, init from example and throw ConfigError so caller exits with help.
 function loadRawConfig() {
+  migrateLegacyConfig();
   const existing = readJsonOrNull(CONFIG_PATH);
   if (existing) return existing;
   initConfigFile();
@@ -89,7 +106,7 @@ function validate(cfg) {
 }
 
 export function loadConfig() {
-  ensureDataDir();
+  ensureConfigDir();
   const raw = loadRawConfig();
   const cfg = { ...DEFAULTS, ...raw };
   applyEnvOverrides(cfg);

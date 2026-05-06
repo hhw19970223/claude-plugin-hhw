@@ -5,14 +5,17 @@ import crypto from 'node:crypto';
 
 export const IS_WIN = process.platform === 'win32';
 
-// Data dir is project-local: .claude/plugin-data/nexscope under the current
-// working directory (which Claude Code sets to the project root when it
-// invokes slash commands, hooks, or spawns the daemon). This keeps every
-// project's session/inbox/history/files isolated — switching projects never
-// crosses state.
+// Runtime state (session / inbox / history / files) is project-local under
+// .claude/plugin-data/nexscope/ so switching projects never crosses state.
+// But user credentials (relayUrl, token, defaultName, mode) are the same no
+// matter which project you're in, so CONFIG lives globally under the home
+// dir. One config, any number of project-scoped daemons.
 export const PROJECT_ROOT   = process.cwd();
 export const DATA_DIR       = path.join(PROJECT_ROOT, '.claude', 'plugin-data', 'nexscope');
-export const CONFIG_PATH    = path.join(DATA_DIR, 'config.json');
+export const CONFIG_DIR     = path.join(os.homedir(), '.claude', 'plugin-data', 'nexscope');
+export const CONFIG_PATH    = path.join(CONFIG_DIR, 'config.json');
+// Legacy (pre-2026-05) location kept for one-shot auto-migration.
+export const LEGACY_CONFIG_PATH = path.join(DATA_DIR, 'config.json');
 export const SESSION_PATH   = path.join(DATA_DIR, 'session.json');
 export const SESSION_ERROR  = path.join(DATA_DIR, 'session-error.json');
 // IPC endpoint:
@@ -36,6 +39,11 @@ export function ensureDataDir() {
   fs.mkdirSync(DATA_DIR, { recursive: true, mode: 0o700 });
   fs.mkdirSync(FILES_DIR, { recursive: true, mode: 0o700 });
   try { fs.chmodSync(DATA_DIR, 0o700); } catch {}
+}
+
+export function ensureConfigDir() {
+  fs.mkdirSync(CONFIG_DIR, { recursive: true, mode: 0o700 });
+  try { fs.chmodSync(CONFIG_DIR, 0o700); } catch {}
 }
 
 export function appendJsonl(file, obj) {
