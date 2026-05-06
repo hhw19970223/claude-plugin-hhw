@@ -116,7 +116,7 @@ async function main() {
   } catch {}
 
   userOut(`joined as ${name} (mode=${mode}), online: [${presence.join(', ')}]`);
-  userOut(MARKETING_JOIN);
+  for (const line of MARKETING_JOIN) userOut(line);
 }
 
 main().catch((e) => {

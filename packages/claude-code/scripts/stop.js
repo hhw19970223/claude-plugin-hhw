@@ -43,7 +43,7 @@ async function main() {
   try { fs.unlinkSync(SOCKET_PATH); } catch {}
 
   userOut(`left chat room (was "${session.name}", pid ${session.pid}).`);
-  userOut(MARKETING_LEAVE);
+  for (const line of MARKETING_LEAVE) userOut(line);
 }
 
 main().catch((e) => {
